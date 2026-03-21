@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "dgSpecHash": "uU1AFbpLeE8=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Pablo\\Documents\\NeedlOS\\Needlos.Aplicacion\\Needlos.Aplicacion.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Pablo\\.nuget\\packages\\fluentvalidation\\11.11.0\\fluentvalidation.11.11.0.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\mediatr\\12.4.0\\mediatr.12.4.0.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\mediatr.contracts\\2.0.1\\mediatr.contracts.2.0.1.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\microsoft.entityframeworkcore\\10.0.5\\microsoft.entityframeworkcore.10.0.5.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\10.0.5\\microsoft.entityframeworkcore.abstractions.10.0.5.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\microsoft.entityframeworkcore.analyzers\\10.0.5\\microsoft.entityframeworkcore.analyzers.10.0.5.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\microsoft.extensions.caching.abstractions\\10.0.5\\microsoft.extensions.caching.abstractions.10.0.5.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\microsoft.extensions.caching.memory\\10.0.5\\microsoft.extensions.caching.memory.10.0.5.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\10.0.5\\microsoft.extensions.dependencyinjection.10.0.5.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.5\\microsoft.extensions.dependencyinjection.abstractions.10.0.5.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\microsoft.extensions.logging\\10.0.5\\microsoft.extensions.logging.10.0.5.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\10.0.5\\microsoft.extensions.logging.abstractions.10.0.5.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\microsoft.extensions.options\\10.0.5\\microsoft.extensions.options.10.0.5.nupkg.sha512",
+    "C:\\Users\\Pablo\\.nuget\\packages\\microsoft.extensions.primitives\\10.0.5\\microsoft.extensions.primitives.10.0.5.nupkg.sha512"
+  ],
+  "logs": []
+}

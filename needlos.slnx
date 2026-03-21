@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Needlos.Api/Needlos.Api.csproj" />
+  <Project Path="Needlos.Aplicacion/Needlos.Aplicacion.csproj" />
+  <Project Path="Needlos.Dominio/Needlos.Dominio.csproj" />
+  <Project Path="Needlos.Infraestructura/Needlos.Infraestructura.csproj" />
+</Solution>

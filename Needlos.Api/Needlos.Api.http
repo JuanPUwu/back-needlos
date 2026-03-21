@@ -1,0 +1,6 @@
+@Needlos.Api_HostAddress = http://localhost:5193
+
+GET {{Needlos.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
