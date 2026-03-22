@@ -11,7 +11,7 @@ namespace Needlos.Api.Controllers;
 
 [ApiController]
 [Route("api/clientes")]
-[Authorize]
+[Authorize(Roles = "Admin,SuperAdmin")]
 public class ClientesController : ControllerBase
 {
     private readonly IMediator _mediator;

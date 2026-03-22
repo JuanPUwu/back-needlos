@@ -5,5 +5,6 @@ namespace Needlos.Aplicacion.Auth.Comandos.Registrar;
 public record RegistrarTenantCommand(
     string NombreTienda,
     string Email,
-    string Password
+    string Password,
+    string Telefono
 ) : IRequest<Guid>;

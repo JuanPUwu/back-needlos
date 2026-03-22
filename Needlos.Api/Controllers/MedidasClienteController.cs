@@ -10,7 +10,7 @@ namespace Needlos.Api.Controllers;
 
 [ApiController]
 [Route("api/clientes/{clienteId}/medidas")]
-[Authorize]
+[Authorize(Roles = "Admin,SuperAdmin")]
 public class MedidasClienteController : ControllerBase
 {
     private readonly IMediator _mediator;

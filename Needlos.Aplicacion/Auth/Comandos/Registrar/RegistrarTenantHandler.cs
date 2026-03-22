@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Needlos.Aplicacion.Contratos;
 using Needlos.Aplicacion.Excepciones;
+using Needlos.Aplicacion.Shared;
 using Needlos.Dominio.Entidades;
 
 namespace Needlos.Aplicacion.Auth.Comandos.Registrar;
@@ -38,15 +39,23 @@ public class RegistrarTenantHandler : IRequestHandler<RegistrarTenantCommand, Gu
 
         var usuario = new Usuario
         {
-            Id = Guid.NewGuid(),
-            Email = request.Email,
+            Id           = Guid.NewGuid(),
+            Email        = request.Email,
             PasswordHash = _passwordHasher.Hash(request.Password),
-            TenantId = tenant.Id,
-            Activo = true
+            TenantId     = tenant.Id,
+            Telefono     = request.Telefono,
+            Activo       = true
+        };
+
+        var usuarioRol = new UsuarioRol
+        {
+            UsuarioId = usuario.Id,
+            RolId     = RolesConstantes.AdminId
         };
 
         _context.Tenants.Add(tenant);
         _context.Usuarios.Add(usuario);
+        _context.UsuarioRoles.Add(usuarioRol);
         await _context.SaveChangesAsync(cancellationToken);
 
         return tenant.Id;

@@ -1,0 +1,55 @@
+# ── Build outputs ────────────────────────────────────────────────────────────
+bin/
+obj/
+out/
+
+# ── Secretos y configuración local ───────────────────────────────────────────
+appsettings.Development.json
+appsettings.Local.json
+*.env
+.env
+.env.*
+secrets.json
+
+# ── Visual Studio / Rider / VS Code ──────────────────────────────────────────
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.idea/
+*.DotSettings.user
+
+# ── Paquetes NuGet ────────────────────────────────────────────────────────────
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ── Logs y temporales ────────────────────────────────────────────────────────
+*.log
+logs/
+*.tmp
+*.temp
+Thumbs.db
+
+# ── Sistema operativo ─────────────────────────────────────────────────────────
+.DS_Store
+Desktop.ini
+
+# ── Artefactos WPF en raíz (proyecto creado por error) ───────────────────────
+App.xaml
+App.xaml.cs
+MainWindow.xaml
+MainWindow.xaml.cs
+AssemblyInfo.cs
+needlos.csproj
+
+# ── Cobertura de tests ────────────────────────────────────────────────────────
+coverage/
+*.coveragexml
+TestResults/

@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Needlos.Aplicacion.Auth.DTOs;
 using Needlos.Aplicacion.Contratos;
+using Needlos.Aplicacion.Shared;
 
 namespace Needlos.Aplicacion.Auth.Comandos.Login;
 
@@ -22,6 +23,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, LoginResultDto>
     {
         var usuario = await _context.Usuarios
             .Include(u => u.Tenant)
+            .Include(u => u.Roles).ThenInclude(ur => ur.Rol)
             .FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
 
         if (usuario is null || !_passwordHasher.Verify(request.Password, usuario.PasswordHash))
@@ -30,7 +32,8 @@ public class LoginHandler : IRequestHandler<LoginCommand, LoginResultDto>
         if (!usuario.Activo)
             throw new UnauthorizedAccessException("Usuario inactivo.");
 
-        var token = _jwtService.GenerarToken(usuario, "Admin");
+        var rol = usuario.Roles.FirstOrDefault()?.Rol?.Nombre ?? RolesConstantes.Admin;
+        var token = _jwtService.GenerarToken(usuario, rol);
 
         return new LoginResultDto
         {

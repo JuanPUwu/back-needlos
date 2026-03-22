@@ -6,6 +6,7 @@ public class Usuario
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
     public Guid TenantId { get; set; }
+    public string Telefono { get; set; } = string.Empty;
     public bool Activo { get; set; } = true;
 
     public Tenant? Tenant { get; set; }

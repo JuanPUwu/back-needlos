@@ -49,10 +49,11 @@ NeedlOS/
 │   ├── Entidades/
 │   │   ├── EntidadBase.cs          ← base de todas las entidades tenant (Id, TenantId, Eliminado, CreadoEn, ActualizadoEn)
 │   │   ├── Orden.cs
+│   │   ├── HistorialEstadoOrden.cs ← registro inmutable de cada transición de estado (hereda EntidadBase)
 │   │   ├── Cliente.cs
 │   │   ├── Servicio.cs
 │   │   ├── DetalleOrden.cs
-│   │   ├── MedidasCliente.cs       ← entidad existente, sin controller todavía
+│   │   ├── MedidasCliente.cs
 │   │   ├── Pago.cs
 │   │   ├── Tenant.cs               ← entidad global (no hereda EntidadBase)
 │   │   ├── Usuario.cs              ← entidad global
@@ -80,7 +81,24 @@ NeedlOS/
 │   │   ├── ClienteService.cs       ← ValidarExistenciaAsync(clienteId) → NotFoundException
 │   │   ├── OrdenService.cs         ← ValidarExistenciaAsync(ordenId)   → NotFoundException
 │   │   ├── ServicioService.cs      ← ValidarExistenciaAsync(servicioId) → NotFoundException
-│   │   └── PaginadoDto.cs          ← wrapper genérico de respuesta paginada
+│   │   ├── PaginadoDto.cs          ← wrapper genérico de respuesta paginada
+│   │   └── RolesConstantes.cs      ← IDs y nombres de roles del sistema (Admin, SuperAdmin)
+│   ├── Admin/
+│   │   ├── Comandos/ConfigurarSuperAdmin/
+│   │   │   ├── ConfigurarSuperAdminCommand.cs
+│   │   │   ├── ConfigurarSuperAdminHandler.cs
+│   │   │   └── ConfigurarSuperAdminValidator.cs
+│   │   ├── Consultas/ObtenerTenants/
+│   │   │   ├── ObtenerTenantsQuery.cs
+│   │   │   ├── ObtenerTenantsHandler.cs
+│   │   │   └── ObtenerTenantsValidator.cs
+│   │   ├── Consultas/ObtenerUsuariosPorTenant/
+│   │   │   ├── ObtenerUsuariosPorTenantQuery.cs
+│   │   │   ├── ObtenerUsuariosPorTenantHandler.cs
+│   │   │   └── ObtenerUsuariosPorTenantValidator.cs
+│   │   └── DTOs/
+│   │       ├── TenantAdminDto.cs
+│   │       └── UsuarioAdminDto.cs
 │   ├── Ordenes/
 │   │   ├── Comandos/
 │   │   │   ├── CrearOrden/
@@ -92,19 +110,24 @@ NeedlOS/
 │   │   ├── Consultas/
 │   │   │   ├── ObtenerOrdenes/
 │   │   │   │   ├── ObtenerOrdenesQuery.cs
-│   │   │   │   └── ObtenerOrdenesHandler.cs
-│   │   │   └── ObtenerOrdenPorId/
-│   │   │       ├── ObtenerOrdenPorIdQuery.cs
-│   │   │       └── ObtenerOrdenPorIdHandler.cs
+│   │   │   │   ├── ObtenerOrdenesHandler.cs
+│   │   │   │   └── ObtenerOrdenesValidator.cs
+│   │   │   ├── ObtenerOrdenPorId/
+│   │   │   │   ├── ObtenerOrdenPorIdQuery.cs
+│   │   │   │   └── ObtenerOrdenPorIdHandler.cs
+│   │   │   └── ObtenerHistorialOrden/
+│   │   │       ├── ObtenerHistorialOrdenQuery.cs
+│   │   │       └── ObtenerHistorialOrdenHandler.cs
 │   │   └── DTOs/
-│   │       └── OrdenDto.cs         (contiene también DetalleOrdenDto)
+│   │       ├── OrdenDto.cs         (contiene también DetalleOrdenDto)
+│   │       └── HistorialEstadoOrdenDto.cs
 │   ├── Clientes/       (misma estructura: Comandos/ Consultas/ DTOs/ — cada Comando tiene su Validator)
 │   ├── Servicios/      (misma estructura)
 │   ├── Pagos/          (Comandos/ + Consultas/ + DTOs/)
 │   ├── MedidasCliente/ (misma estructura: Comandos/ Consultas/ DTOs/)
 │   └── Auth/
-│       ├── Comandos/Login/     (LoginCommand + LoginHandler)
-│       ├── Comandos/Registrar/ (RegistrarTenantCommand + RegistrarTenantHandler)
+│       ├── Comandos/Login/     (LoginCommand + LoginHandler + LoginValidator)
+│       ├── Comandos/Registrar/ (RegistrarTenantCommand + RegistrarTenantHandler + RegistrarTenantValidator)
 │       └── DTOs/               (LoginResultDto)
 │
 ├── Needlos.Infraestructura/
@@ -121,11 +144,12 @@ NeedlOS/
 └── Needlos.Api/
     ├── Controllers/
     │   ├── AuthController.cs             (público: /api/auth/registrar, /api/auth/login)
-    │   ├── OrdenesController.cs          ([Authorize])
-    │   ├── ClientesController.cs         ([Authorize])
-    │   ├── ServiciosController.cs        ([Authorize])
-    │   ├── PagosController.cs            ([Authorize])
-    │   └── MedidasClienteController.cs   ([Authorize], ruta: /api/clientes/{clienteId}/medidas)
+    │   ├── AdminController.cs            (/api/admin/setup público; resto [Authorize(Roles="SuperAdmin")])
+    │   ├── OrdenesController.cs          ([Authorize(Roles="Admin,SuperAdmin")])
+    │   ├── ClientesController.cs         ([Authorize(Roles="Admin,SuperAdmin")])
+    │   ├── ServiciosController.cs        ([Authorize(Roles="Admin,SuperAdmin")])
+    │   ├── PagosController.cs            ([Authorize(Roles="Admin,SuperAdmin")])
+    │   └── MedidasClienteController.cs   ([Authorize(Roles="Admin,SuperAdmin")], ruta: /api/clientes/{clienteId}/medidas)
     ├── Middleware/
     │   ├── CorrelationIdMiddleware.cs     ← asigna X-Correlation-Id a cada request
     │   ├── RequestLoggingMiddleware.cs    ← loguea método, path, status, duración y tenant
@@ -195,7 +219,7 @@ Tenant
 └── Id, Nombre, Slug (único, auto-generado), Activo, CreadoEn
 
 Usuario
-├── Id, Email (único), PasswordHash, TenantId (FK → Tenant), Activo
+├── Id, Email (único), PasswordHash, TenantId (FK → Tenant), Telefono (NOT NULL), Activo
 └── → Roles (N:M via UsuarioRol)
 
 Rol
@@ -204,6 +228,19 @@ Rol
 UsuarioRol
 └── UsuarioId + RolId (PK compuesta)
 ```
+
+### Roles del sistema (sembrados en BD — IDs fijos)
+
+| Rol | ID fijo | Descripción |
+|---|---|---|
+| `Admin` | `00000000-0000-0000-0000-000000000001` | Dueño de una sastrería. Se asigna automáticamente al registrarse. |
+| `SuperAdmin` | `00000000-0000-0000-0000-000000000002` | Creador del sistema. Acceso global a todos los tenants. Se pueden crear máximo 2 via `POST /api/admin/setup`. Uno está pre-sembrado en BD (email: `admin`, password: `admin`). |
+
+El **Tenant sistema** (`Id = 00000000-0000-0000-0000-000000000003`, slug `"sistema"`) es el tenant al que pertenece el SuperAdmin. Está reservado y no puede ser tomado por ninguna sastrería.
+
+El **SuperAdmin semilla** tiene `Id = 00000000-0000-0000-0000-000000000004`, email `admin`, contraseña `admin` y teléfono `3133585900`. Está insertado directamente en BD y su email no pasa por el validador de formato (es una cuenta de sistema). Cambiar la contraseña en producción.
+
+Los nombres de los roles (`"Admin"`, `"SuperAdmin"`) se almacenan en BD tal cual (sin normalización, ya que son constantes del sistema). Deben coincidir exactamente con los valores en `RolesConstantes` y con los atributos `[Authorize(Roles = "...")]` de los controllers.
 
 ---
 
@@ -341,6 +378,9 @@ Cada command tiene su validator co-ubicado en la misma carpeta:
 Aplicacion/
 ├── Auth/Comandos/Login/                        LoginValidator.cs
 ├── Auth/Comandos/Registrar/                    RegistrarTenantValidator.cs
+├── Admin/Comandos/ConfigurarSuperAdmin/        ConfigurarSuperAdminValidator.cs
+├── Admin/Consultas/ObtenerTenants/             ObtenerTenantsValidator.cs           ← pagina/tamano
+├── Admin/Consultas/ObtenerUsuariosPorTenant/   ObtenerUsuariosPorTenantValidator.cs ← pagina/tamano
 ├── Clientes/Comandos/CrearCliente/             CrearClienteValidator.cs
 ├── Clientes/Comandos/ActualizarCliente/        ActualizarClienteValidator.cs
 ├── Clientes/Consultas/ObtenerClientes/         ObtenerClientesValidator.cs      ← pagina/tamano
@@ -359,8 +399,9 @@ Aplicacion/
 
 | Command | Reglas |
 |---|---|
-| `RegistrarTenantCommand` | NombreTienda required ≤100, Email válido ≤150, Password ≥6 chars |
-| `LoginCommand` | Email válido, Password required |
+| `RegistrarTenantCommand` | NombreTienda required ≤100, Email válido ≤150, Password ≥8 chars + mayúscula + minúscula + especial, Telefono required ≥10 dígitos ≤20 chars |
+| `LoginCommand` | Email required (sin validación de formato — permite el SuperAdmin semilla con email `admin`), Password required |
+| `ConfigurarSuperAdminCommand` | Email válido ≤150, Password ≥8 chars + mayúscula + minúscula + especial, Telefono required ≥10 dígitos ≤20 chars |
 | `CrearClienteCommand` | Nombre required ≤100, Teléfono required ≤20, Email válido ≤150 |
 | `ActualizarClienteCommand` | Id not empty, Nombre required ≤100, Teléfono required ≤20, Email válido ≤150 |
 | `CrearServicioCommand` | Nombre required ≤100, PrecioBase > 0 |
@@ -465,10 +506,10 @@ public class CrearOrdenHandler(NeedlosDbContext context) : IRequestHandler<...>
 
 ## Autenticación
 
-- **Registro**: `POST /api/auth/registrar` — crea Tenant + Usuario admin, slug auto-generado
-- **Login**: `POST /api/auth/login` — valida credenciales, retorna JWT
+- **Registro**: `POST /api/auth/registrar` — crea Tenant + Usuario admin (con rol `Admin`), slug auto-generado
+- **Login**: `POST /api/auth/login` — valida credenciales, retorna JWT con el rol real leído de BD
 - JWT contiene claims: `sub` (userId), `email`, `tenant_id`, `role`
-- Todos los endpoints de negocio llevan `[Authorize]`
+- Todos los endpoints de negocio llevan `[Authorize(Roles = "Admin,SuperAdmin")]`
 - `AuthController` es el único controller público (sin `[Authorize]`)
 
 ---
@@ -481,7 +522,7 @@ public class CrearOrdenHandler(NeedlosDbContext context) : IRequestHandler<...>
 
 ```
 POST /api/auth/registrar
-Body:       { "nombreTienda": string, "email": string, "password": string }
+Body:       { "nombreTienda": string, "email": string, "password": string, "telefono": string }
 201 Created { "tenantId": guid }
 409 Conflict — el email ya está registrado
 
@@ -491,7 +532,26 @@ Body:    { "email": string, "password": string }
 401 Unauthorized — credenciales inválidas o usuario inactivo
 ```
 
-### Órdenes `[Authorize]`
+### Admin sistema
+
+```
+POST /api/admin/setup                         ← público, máximo 2 veces (límite de SuperAdmins)
+Body:        { "email": string, "password": string, "telefono": string }
+201 Created  { "id": guid }
+400 Bad Request — input inválido
+409 Conflict — ya existen 2 SuperAdmins configurados
+
+GET /api/admin/tenants?pagina=1&tamano=20     ← [Authorize(Roles="SuperAdmin")]
+200 OK  PaginadoDto<TenantAdminDto>  { datos, pagina, tamano, total, totalPaginas }
+400 Bad Request — parámetros de paginación inválidos
+
+GET /api/admin/tenants/{tenantId}/usuarios?pagina=1&tamano=20  ← [Authorize(Roles="SuperAdmin")]
+200 OK  PaginadoDto<UsuarioAdminDto>
+400 Bad Request — parámetros inválidos
+404 Not Found — tenant no encontrado
+```
+
+### Órdenes `[Authorize(Roles="Admin,SuperAdmin")]`
 
 ```
 GET /api/ordenes?pagina=1&tamano=20
@@ -523,7 +583,7 @@ Body: int  ← 0=Pendiente, 1=EnProceso, 2=Listo, 3=Entregado (ASP.NET Core dese
 404 Not Found — orden no encontrada
 ```
 
-### Clientes `[Authorize]`
+### Clientes `[Authorize(Roles="Admin,SuperAdmin")]`
 
 ```
 GET /api/clientes?pagina=1&tamano=20
@@ -550,7 +610,7 @@ DELETE /api/clientes/{id}
 404 Not Found — cliente no encontrado
 ```
 
-### Servicios `[Authorize]`
+### Servicios `[Authorize(Roles="Admin,SuperAdmin")]`
 
 ```
 GET /api/servicios?pagina=1&tamano=20
@@ -577,7 +637,7 @@ DELETE /api/servicios/{id}
 404 Not Found — servicio no encontrado
 ```
 
-### Pagos `[Authorize]`
+### Pagos `[Authorize(Roles="Admin,SuperAdmin")]`
 
 ```
 GET /api/pagos?ordenId={guid}
@@ -592,7 +652,7 @@ Body:        { "ordenId": guid, "monto": decimal, "metodo": int }
 404 Not Found — la ordenId no existe
 ```
 
-### Medidas de cliente `[Authorize]`
+### Medidas de cliente `[Authorize(Roles="Admin,SuperAdmin")]`
 
 ```
 GET /api/clientes/{clienteId}/medidas
@@ -640,6 +700,12 @@ MedidasClienteDto
 
 HistorialEstadoOrdenDto
 └── id, estadoAnterior (string), estadoNuevo (string), cambiadoPor (guid), cambiadoEn
+
+TenantAdminDto
+└── id, nombre, slug, activo, creadoEn
+
+UsuarioAdminDto
+└── id, email, activo, roles (string[])
 ```
 
 ---
@@ -669,7 +735,7 @@ HistorialEstadoOrdenDto
 5. **Controllers solo llaman `_mediator.Send(...)` — ninguna lógica de negocio en controllers**
 6. **Todas las entidades de negocio heredan `EntidadBase`** (TenantId, soft delete y timestamps automáticos)
 7. **Tenant, Usuario, Rol son globales** — no heredan EntidadBase, sin filtro de tenant
-8. **Nuevos controllers deben llevar `[Authorize]`** salvo que sean públicos explícitamente justificados
+8. **Nuevos controllers deben llevar `[Authorize(Roles = "Admin,SuperAdmin")]`** para endpoints de negocio, o `[Authorize(Roles = "SuperAdmin")]` para endpoints de gestión global. Solo `AuthController` y `POST /api/admin/setup` son públicos.
 9. **Enums se almacenan como string en PostgreSQL** (legibilidad en BD)
 10. **No hay DELETE real** — siempre soft delete (`Eliminado = true`)
 11. **Toda nueva feature se documenta en CLAUDE.md** — endpoints con request/response, status codes y errores posibles. Sin documentación, la feature está incompleta.
