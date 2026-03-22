@@ -21,11 +21,12 @@ public class ClientesController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>Devuelve los clientes del tenant paginados.</summary>
-    /// <param name="pagina">Número de página (mínimo 1, default 1).</param>
-    /// <param name="tamano">Elementos por página (1-100, default 20).</param>
-    /// <response code="200">Resultado paginado: datos, pagina, tamano, total, totalPaginas.</response>
-    /// <response code="400">Parámetros de paginación inválidos.</response>
+    /// <summary>Lista todos los clientes de la sastrería.</summary>
+    /// <remarks>Devuelve los clientes ordenados alfabéticamente por nombre.</remarks>
+    /// <param name="pagina">Número de página. Empieza en 1.</param>
+    /// <param name="tamano">Cantidad de clientes por página. Máximo 100, por defecto 20.</param>
+    /// <response code="200">Lista paginada de clientes con el total de registros y páginas.</response>
+    /// <response code="400">Los parámetros de paginación son inválidos.</response>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -35,9 +36,9 @@ public class ClientesController : ControllerBase
         return Ok(resultado);
     }
 
-    /// <summary>Devuelve un cliente por su Id.</summary>
-    /// <response code="200">Cliente encontrado.</response>
-    /// <response code="404">Cliente no encontrado.</response>
+    /// <summary>Obtiene el detalle de un cliente.</summary>
+    /// <response code="200">Datos del cliente: nombre, teléfono, email y fecha de registro.</response>
+    /// <response code="404">No existe ningún cliente con ese id.</response>
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -47,9 +48,9 @@ public class ClientesController : ControllerBase
         return Ok(cliente);
     }
 
-    /// <summary>Crea un nuevo cliente.</summary>
-    /// <response code="201">Cliente creado. Devuelve el id.</response>
-    /// <response code="400">Datos inválidos.</response>
+    /// <summary>Registra un nuevo cliente en la sastrería.</summary>
+    /// <response code="201">Cliente creado correctamente. Devuelve el id asignado.</response>
+    /// <response code="400">Los datos son inválidos (nombre vacío, email incorrecto, etc.).</response>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -59,10 +60,10 @@ public class ClientesController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, new { id });
     }
 
-    /// <summary>Actualiza los datos de un cliente existente.</summary>
-    /// <response code="204">Cliente actualizado.</response>
-    /// <response code="400">Datos inválidos.</response>
-    /// <response code="404">Cliente no encontrado.</response>
+    /// <summary>Actualiza los datos de un cliente.</summary>
+    /// <response code="204">Cliente actualizado correctamente.</response>
+    /// <response code="400">Los datos son inválidos.</response>
+    /// <response code="404">No existe ningún cliente con ese id.</response>
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -73,9 +74,10 @@ public class ClientesController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Elimina (soft delete) un cliente.</summary>
-    /// <response code="204">Cliente eliminado.</response>
-    /// <response code="404">Cliente no encontrado.</response>
+    /// <summary>Elimina un cliente de la sastrería.</summary>
+    /// <remarks>El cliente no se borra físicamente de la base de datos, solo se marca como eliminado y deja de aparecer en las listas.</remarks>
+    /// <response code="204">Cliente eliminado correctamente.</response>
+    /// <response code="404">No existe ningún cliente con ese id.</response>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

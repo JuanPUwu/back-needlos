@@ -21,11 +21,12 @@ public class ServiciosController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>Devuelve los servicios del tenant paginados.</summary>
-    /// <param name="pagina">Número de página (mínimo 1, default 1).</param>
-    /// <param name="tamano">Elementos por página (1-100, default 20).</param>
-    /// <response code="200">Resultado paginado: datos, pagina, tamano, total, totalPaginas.</response>
-    /// <response code="400">Parámetros de paginación inválidos.</response>
+    /// <summary>Lista todos los servicios que ofrece la sastrería.</summary>
+    /// <remarks>Devuelve los servicios ordenados alfabéticamente por nombre. Estos son los servicios disponibles para agregar a las órdenes.</remarks>
+    /// <param name="pagina">Número de página. Empieza en 1.</param>
+    /// <param name="tamano">Cantidad de servicios por página. Máximo 100, por defecto 20.</param>
+    /// <response code="200">Lista paginada de servicios con el total de registros y páginas.</response>
+    /// <response code="400">Los parámetros de paginación son inválidos.</response>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -35,9 +36,9 @@ public class ServiciosController : ControllerBase
         return Ok(resultado);
     }
 
-    /// <summary>Devuelve un servicio por su Id.</summary>
-    /// <response code="200">Servicio encontrado.</response>
-    /// <response code="404">Servicio no encontrado.</response>
+    /// <summary>Obtiene el detalle de un servicio.</summary>
+    /// <response code="200">Datos del servicio: nombre y precio base.</response>
+    /// <response code="404">No existe ningún servicio con ese id.</response>
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -47,9 +48,10 @@ public class ServiciosController : ControllerBase
         return Ok(servicio);
     }
 
-    /// <summary>Crea un nuevo servicio.</summary>
-    /// <response code="201">Servicio creado. Devuelve el id.</response>
-    /// <response code="400">Datos inválidos.</response>
+    /// <summary>Agrega un nuevo servicio al catálogo de la sastrería.</summary>
+    /// <remarks>El precio base sirve como referencia; al crear una orden se puede especificar un precio diferente por servicio.</remarks>
+    /// <response code="201">Servicio creado correctamente. Devuelve el id asignado.</response>
+    /// <response code="400">Los datos son inválidos (nombre vacío o precio negativo).</response>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -59,10 +61,10 @@ public class ServiciosController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, new { id });
     }
 
-    /// <summary>Actualiza los datos de un servicio existente.</summary>
-    /// <response code="204">Servicio actualizado.</response>
-    /// <response code="400">Datos inválidos.</response>
-    /// <response code="404">Servicio no encontrado.</response>
+    /// <summary>Actualiza el nombre o precio de un servicio.</summary>
+    /// <response code="204">Servicio actualizado correctamente.</response>
+    /// <response code="400">Los datos son inválidos.</response>
+    /// <response code="404">No existe ningún servicio con ese id.</response>
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -73,9 +75,10 @@ public class ServiciosController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Elimina (soft delete) un servicio.</summary>
-    /// <response code="204">Servicio eliminado.</response>
-    /// <response code="404">Servicio no encontrado.</response>
+    /// <summary>Elimina un servicio del catálogo.</summary>
+    /// <remarks>El servicio no se borra físicamente. Las órdenes existentes que lo usaban no se ven afectadas.</remarks>
+    /// <response code="204">Servicio eliminado correctamente.</response>
+    /// <response code="404">No existe ningún servicio con ese id.</response>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

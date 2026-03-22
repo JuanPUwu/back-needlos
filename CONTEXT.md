@@ -233,8 +233,8 @@ UsuarioRol
 
 | Rol | ID fijo | Descripción |
 |---|---|---|
-| `Admin` | `00000000-0000-0000-0000-000000000001` | Dueño de una sastrería. Se asigna automáticamente al registrarse. |
-| `SuperAdmin` | `00000000-0000-0000-0000-000000000002` | Creador del sistema. Acceso global a todos los tenants. Se pueden crear máximo 2 via `POST /api/admin/setup`. Uno está pre-sembrado en BD (email: `admin`, password: `admin`). |
+| `SuperAdmin` | `00000000-0000-0000-0000-000000000001` | Creador del sistema. Acceso global a todos los tenants. Se pueden crear máximo 2 via `POST /api/admin/setup`. Uno está pre-sembrado en BD (email: `admin`, password: `admin`). |
+| `Admin` | `00000000-0000-0000-0000-000000000002` | Dueño de una sastrería. Se asigna automáticamente al registrarse. |
 
 El **Tenant sistema** (`Id = 00000000-0000-0000-0000-000000000003`, slug `"sistema"`) es el tenant al que pertenece el SuperAdmin. Está reservado y no puede ser tomado por ninguna sastrería.
 
@@ -399,9 +399,9 @@ Aplicacion/
 
 | Command | Reglas |
 |---|---|
-| `RegistrarTenantCommand` | NombreTienda required ≤100, Email válido ≤150, Password ≥8 chars + mayúscula + minúscula + especial, Telefono required ≥10 dígitos ≤20 chars |
+| `RegistrarTenantCommand` | NombreTienda required ≤100, Email válido ≤150, Password ≥8 chars + mayúscula + minúscula + número + especial, Telefono required ≥10 dígitos ≤20 chars |
 | `LoginCommand` | Email required (sin validación de formato — permite el SuperAdmin semilla con email `admin`), Password required |
-| `ConfigurarSuperAdminCommand` | Email válido ≤150, Password ≥8 chars + mayúscula + minúscula + especial, Telefono required ≥10 dígitos ≤20 chars |
+| `ConfigurarSuperAdminCommand` | Email válido ≤150, Password ≥8 chars + mayúscula + minúscula + número + especial, Telefono required ≥10 dígitos ≤20 chars |
 | `CrearClienteCommand` | Nombre required ≤100, Teléfono required ≤20, Email válido ≤150 |
 | `ActualizarClienteCommand` | Id not empty, Nombre required ≤100, Teléfono required ≤20, Email válido ≤150 |
 | `CrearServicioCommand` | Nombre required ≤100, PrecioBase > 0 |
@@ -453,7 +453,7 @@ Las entidades de negocio no son solo contenedores de datos. Cuando existen **reg
 public void CambiarEstado(EstadoOrden nuevoEstado)
 {
     if (Estado == EstadoOrden.Entregado)
-        throw new BusinessException("La orden ya fue entregada y no puede cambiar de estado.");
+        throw new BusinessException($"La orden ya fue entregada y no puede cambiar a '{nuevoEstado}'.");
     Estado = nuevoEstado;
 }
 ```
@@ -744,6 +744,7 @@ UsuarioAdminDto
 14. **Lógica de negocio en entidades, no en handlers** — si existe una invariante real (transición inválida, límite de negocio), se expresa en un método de la entidad que lanza `BusinessException`
 15. **Lógica reutilizable entre handlers va en `Aplicacion/Shared/`** — si la misma verificación aparece en 2+ handlers, se extrae a un servicio shared. No antes (no es pre-optimización).
 16. **Todos los endpoints de lista son paginados** — retornan `PaginadoDto<T>` con parámetros `?pagina` y `?tamano`. Nunca devolver listas sin paginar.
+17. **Todo endpoint lleva documentación Swagger descriptiva y amigable** — usar `/// <summary>`, `/// <remarks>` y `/// <response code="...">` en cada acción del controller. Las descripciones deben explicar qué hace el endpoint, qué espera y qué devuelve en lenguaje claro (no técnico). Ver controllers existentes como referencia de estilo.
 
 ---
 
@@ -827,20 +828,48 @@ Esto permite reutilizar un slug o email si el registro original fue desactivado,
 
 ## Migraciones
 
+### Flujo de desarrollo — `dev.sh`
+
+En desarrollo se usa `dev.sh` para reiniciar todo desde cero (equivalente a `ddl-auto=create` de Spring Boot):
+
 ```bash
-# Crear nueva migración
+./dev.sh
+```
+
+El script:
+1. Elimina la BD (`database drop --force`)
+2. Elimina todos los archivos `.cs` de `Migrations/` (migración + designer + snapshot)
+3. Regenera `InitialCreate` desde el modelo actual (`migrations add InitialCreate`)
+4. Aplica la migración (`database update`) — crea tablas + datos semilla
+5. Arranca la API (`dotnet run`)
+
+Cualquier cambio en entidades, relaciones o configuraciones de EF queda reflejado automáticamente la próxima vez que se corra `dev.sh`. No hace falta crear migraciones adicionales durante el desarrollo.
+
+### Datos semilla
+
+Los datos iniciales del sistema viven en `NeedlosDbContext.OnModelCreating` usando `HasData`. Esto garantiza que siempre se incluyen al regenerar `InitialCreate`:
+
+- Roles `SuperAdmin` (`...0001`) y `Admin` (`...0002`)
+- Tenant sistema (`...0003`, slug `"sistema"`)
+- SuperAdmin semilla (`...0004`, email `admin`, password `admin`)
+- `UsuarioRol` que asigna SuperAdmin al usuario semilla
+
+**No se deben crear migraciones separadas para datos semilla** — todo va en `HasData`.
+
+### Flujo de producción
+
+En producción las migraciones deben estar commiteadas y no se regeneran:
+
+```bash
+# Crear nueva migración (cuando se hace un cambio de modelo)
 dotnet ef migrations add [NombreMigracion] \
   --project Needlos.Infraestructura \
   --startup-project Needlos.Api
 
-# Aplicar a la BD
+# Aplicar a la BD (sin perder datos)
 dotnet ef database update \
   --project Needlos.Infraestructura \
   --startup-project Needlos.Api
-
-# Resetear BD en desarrollo
-dotnet ef database drop --project Needlos.Infraestructura --startup-project Needlos.Api --force
-dotnet ef database update --project Needlos.Infraestructura --startup-project Needlos.Api
 ```
 
 Conexión BD: `Host=localhost;Port=5432;Database=needlos_db;Username=postgres;Password=admin`

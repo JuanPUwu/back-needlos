@@ -10,8 +10,8 @@ public static class RolesConstantes
     public const string Admin      = "Admin";
     public const string SuperAdmin = "SuperAdmin";
 
-    public static readonly Guid AdminId      = new("00000000-0000-0000-0000-000000000001");
-    public static readonly Guid SuperAdminId = new("00000000-0000-0000-0000-000000000002");
+    public static readonly Guid SuperAdminId = new("00000000-0000-0000-0000-000000000001");
+    public static readonly Guid AdminId      = new("00000000-0000-0000-0000-000000000002");
 
     /// <summary>Tenant especial del sistema. Se usa como TenantId del usuario SuperAdmin.</summary>
     public static readonly Guid TenantSistemaId = new("00000000-0000-0000-0000-000000000003");

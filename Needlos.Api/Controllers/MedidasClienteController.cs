@@ -20,9 +20,10 @@ public class MedidasClienteController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>Devuelve todas las medidas de un cliente.</summary>
-    /// <response code="200">Lista de medidas del cliente.</response>
-    /// <response code="404">Cliente no encontrado.</response>
+    /// <summary>Lista todas las medidas registradas para un cliente.</summary>
+    /// <remarks>Un cliente puede tener múltiples registros de medidas a lo largo del tiempo.</remarks>
+    /// <response code="200">Lista de medidas con pecho, cintura, largo y observaciones.</response>
+    /// <response code="404">No existe ningún cliente con ese clienteId.</response>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -32,10 +33,11 @@ public class MedidasClienteController : ControllerBase
         return Ok(medidas);
     }
 
-    /// <summary>Registra nuevas medidas para un cliente.</summary>
-    /// <response code="201">Medidas creadas. Devuelve el id.</response>
-    /// <response code="400">Datos inválidos.</response>
-    /// <response code="404">Cliente no encontrado.</response>
+    /// <summary>Registra un nuevo set de medidas para un cliente.</summary>
+    /// <remarks>Todos los valores de pecho, cintura y largo deben ser mayores a cero. Las observaciones son opcionales.</remarks>
+    /// <response code="201">Medidas registradas correctamente. Devuelve el id asignado.</response>
+    /// <response code="400">Los datos son inválidos (medidas en cero o negativas).</response>
+    /// <response code="404">No existe ningún cliente con ese clienteId.</response>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -46,10 +48,10 @@ public class MedidasClienteController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, new { id });
     }
 
-    /// <summary>Actualiza unas medidas existentes.</summary>
-    /// <response code="204">Medidas actualizadas.</response>
-    /// <response code="400">Datos inválidos.</response>
-    /// <response code="404">Medidas no encontradas.</response>
+    /// <summary>Actualiza un registro de medidas existente.</summary>
+    /// <response code="204">Medidas actualizadas correctamente.</response>
+    /// <response code="400">Los datos son inválidos.</response>
+    /// <response code="404">No existe ningún registro de medidas con ese id.</response>
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -60,9 +62,10 @@ public class MedidasClienteController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Elimina (soft delete) unas medidas.</summary>
-    /// <response code="204">Medidas eliminadas.</response>
-    /// <response code="404">Medidas no encontradas.</response>
+    /// <summary>Elimina un registro de medidas.</summary>
+    /// <remarks>El registro no se borra físicamente, solo deja de aparecer en las consultas.</remarks>
+    /// <response code="204">Medidas eliminadas correctamente.</response>
+    /// <response code="404">No existe ningún registro de medidas con ese id.</response>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

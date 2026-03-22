@@ -1,8 +1,10 @@
 using System.Text;
+using System.Reflection;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Needlos.Aplicacion.Auth.Comandos.Login;
 using Needlos.Aplicacion.Behaviors;
 using Needlos.Aplicacion.Contratos;
@@ -57,7 +59,40 @@ builder.Services.AddControllers();
 
 // ── Swagger ───────────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title       = "NeedlOS API",
+        Version     = "v1",
+        Description = "API para la gestión de sastrerías. Todos los endpoints de negocio requieren autenticación JWT. " +
+                      "Usa POST /api/auth/login para obtener el token y luego haz clic en 'Authorize'."
+    });
+
+    // Leer comentarios XML de los controllers
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
+
+    // Botón Authorize en Swagger UI para enviar el JWT
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name         = "Authorization",
+        Type         = SecuritySchemeType.Http,
+        Scheme       = "Bearer",
+        BearerFormat = "JWT",
+        In           = ParameterLocation.Header,
+        Description  = "Ingresa el token JWT obtenido en /api/auth/login. Ejemplo: eyJhbGci..."
+    });
+
+    c.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecuritySchemeReference("Bearer"),
+            new List<string>()
+        }
+    });
+});
 
 // ── JWT Authentication ────────────────────────────────────────────
 // En producción la clave debe venir de la variable de entorno Jwt__Key.

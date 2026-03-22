@@ -22,11 +22,12 @@ public class OrdenesController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>Devuelve las órdenes del tenant paginadas.</summary>
-    /// <param name="pagina">Número de página (mínimo 1, default 1).</param>
-    /// <param name="tamano">Elementos por página (1-100, default 20).</param>
-    /// <response code="200">Resultado paginado: datos, pagina, tamano, total, totalPaginas.</response>
-    /// <response code="400">Parámetros de paginación inválidos.</response>
+    /// <summary>Lista todas las órdenes de la sastrería.</summary>
+    /// <remarks>Devuelve las órdenes más recientes primero. Cada orden incluye cliente, estado, precio total y detalles.</remarks>
+    /// <param name="pagina">Número de página. Empieza en 1.</param>
+    /// <param name="tamano">Cantidad de órdenes por página. Máximo 100, por defecto 20.</param>
+    /// <response code="200">Lista paginada de órdenes con el total de registros y páginas.</response>
+    /// <response code="400">Los parámetros de paginación son inválidos.</response>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -36,9 +37,10 @@ public class OrdenesController : ControllerBase
         return Ok(resultado);
     }
 
-    /// <summary>Devuelve una orden por su Id.</summary>
-    /// <response code="200">Orden encontrada.</response>
-    /// <response code="404">Orden no encontrada.</response>
+    /// <summary>Obtiene el detalle completo de una orden.</summary>
+    /// <remarks>Incluye cliente, estado actual, precio total, servicios incluidos y pagos registrados.</remarks>
+    /// <response code="200">Detalle completo de la orden.</response>
+    /// <response code="404">No existe ninguna orden con ese id.</response>
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -48,10 +50,14 @@ public class OrdenesController : ControllerBase
         return Ok(orden);
     }
 
-    /// <summary>Crea una nueva orden para un cliente existente.</summary>
-    /// <response code="201">Orden creada. Devuelve el id.</response>
-    /// <response code="400">Datos inválidos.</response>
-    /// <response code="404">El clienteId no existe.</response>
+    /// <summary>Crea una nueva orden para un cliente.</summary>
+    /// <remarks>
+    /// La orden debe tener al menos un servicio. El precio de cada servicio se especifica manualmente.
+    /// La fecha de entrega debe ser futura. El estado inicial es siempre "Pendiente".
+    /// </remarks>
+    /// <response code="201">Orden creada correctamente. Devuelve el id de la nueva orden.</response>
+    /// <response code="400">Los datos son inválidos (sin detalles, fecha pasada, precio negativo, etc.).</response>
+    /// <response code="404">El cliente o alguno de los servicios indicados no existe.</response>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -62,9 +68,10 @@ public class OrdenesController : ControllerBase
         return CreatedAtAction(nameof(ObtenerPorId), new { id }, new { id });
     }
 
-    /// <summary>Devuelve el historial de cambios de estado de una orden.</summary>
-    /// <response code="200">Lista de transiciones de estado ordenada cronológicamente.</response>
-    /// <response code="404">Orden no encontrada.</response>
+    /// <summary>Consulta el historial de estados de una orden.</summary>
+    /// <remarks>Muestra cada cambio de estado en orden cronológico: quién lo hizo, cuándo y desde qué estado pasó a cuál.</remarks>
+    /// <response code="200">Lista cronológica de cambios de estado.</response>
+    /// <response code="404">No existe ninguna orden con ese id.</response>
     [HttpGet("{id}/historial")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -74,10 +81,14 @@ public class OrdenesController : ControllerBase
         return Ok(historial);
     }
 
-    /// <summary>Actualiza el estado de una orden existente.</summary>
-    /// <response code="204">Estado actualizado.</response>
-    /// <response code="400">Transición de estado inválida (ej: orden ya entregada).</response>
-    /// <response code="404">Orden no encontrada.</response>
+    /// <summary>Cambia el estado de una orden.</summary>
+    /// <remarks>
+    /// Estados posibles: 0 = Pendiente, 1 = En Proceso, 2 = Listo, 3 = Entregado.
+    /// Una orden marcada como "Entregado" no puede cambiar de estado.
+    /// </remarks>
+    /// <response code="204">Estado actualizado correctamente.</response>
+    /// <response code="400">Cambio de estado no permitido (por ejemplo, la orden ya fue entregada).</response>
+    /// <response code="404">No existe ninguna orden con ese id.</response>
     [HttpPut("{id}/estado")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

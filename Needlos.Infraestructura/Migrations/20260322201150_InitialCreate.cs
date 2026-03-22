@@ -3,30 +3,16 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace Needlos.Infraestructura.Migrations
 {
     /// <inheritdoc />
-    public partial class SistemaCompleto : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "Datos",
-                table: "Ordenes");
-
-            migrationBuilder.DropColumn(
-                name: "Descripcion",
-                table: "Ordenes");
-
-            migrationBuilder.DropColumn(
-                name: "FechaCreacion",
-                table: "Ordenes");
-
-            migrationBuilder.DropColumn(
-                name: "NombreCliente",
-                table: "Ordenes");
-
             migrationBuilder.CreateTable(
                 name: "Clientes",
                 columns: table => new
@@ -39,36 +25,13 @@ namespace Needlos.Infraestructura.Migrations
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     Eliminado = table.Column<bool>(type: "boolean", nullable: false),
                     CreadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ActualizadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    ActualizadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreadoPor = table.Column<Guid>(type: "uuid", nullable: false),
+                    ActualizadoPor = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Clientes", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Pagos",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    OrdenId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Monto = table.Column<decimal>(type: "numeric", nullable: false),
-                    Metodo = table.Column<string>(type: "text", nullable: false),
-                    Fecha = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Eliminado = table.Column<bool>(type: "boolean", nullable: false),
-                    CreadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ActualizadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Pagos", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Pagos_Ordenes_OrdenId",
-                        column: x => x.OrdenId,
-                        principalTable: "Ordenes",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -93,7 +56,9 @@ namespace Needlos.Infraestructura.Migrations
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     Eliminado = table.Column<bool>(type: "boolean", nullable: false),
                     CreadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ActualizadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    ActualizadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreadoPor = table.Column<Guid>(type: "uuid", nullable: false),
+                    ActualizadoPor = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -128,7 +93,9 @@ namespace Needlos.Infraestructura.Migrations
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     Eliminado = table.Column<bool>(type: "boolean", nullable: false),
                     CreadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ActualizadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    ActualizadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreadoPor = table.Column<Guid>(type: "uuid", nullable: false),
+                    ActualizadoPor = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -139,6 +106,55 @@ namespace Needlos.Infraestructura.Migrations
                         principalTable: "Clientes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Ordenes",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ClienteId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Estado = table.Column<string>(type: "text", nullable: false),
+                    PrecioTotal = table.Column<decimal>(type: "numeric", nullable: false),
+                    FechaEntrega = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Eliminado = table.Column<bool>(type: "boolean", nullable: false),
+                    CreadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ActualizadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreadoPor = table.Column<Guid>(type: "uuid", nullable: false),
+                    ActualizadoPor = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Ordenes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Ordenes_Clientes_ClienteId",
+                        column: x => x.ClienteId,
+                        principalTable: "Clientes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Usuarios",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: false),
+                    PasswordHash = table.Column<string>(type: "text", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Telefono = table.Column<string>(type: "text", nullable: false),
+                    Activo = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Usuarios", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Usuarios_Tenants_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "Tenants",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -153,7 +169,9 @@ namespace Needlos.Infraestructura.Migrations
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     Eliminado = table.Column<bool>(type: "boolean", nullable: false),
                     CreadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ActualizadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    ActualizadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreadoPor = table.Column<Guid>(type: "uuid", nullable: false),
+                    ActualizadoPor = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -173,22 +191,54 @@ namespace Needlos.Infraestructura.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Usuarios",
+                name: "HistorialesEstadoOrden",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: false),
-                    PasswordHash = table.Column<string>(type: "text", nullable: false),
+                    OrdenId = table.Column<Guid>(type: "uuid", nullable: false),
+                    EstadoAnterior = table.Column<string>(type: "text", nullable: false),
+                    EstadoNuevo = table.Column<string>(type: "text", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Activo = table.Column<bool>(type: "boolean", nullable: false)
+                    Eliminado = table.Column<bool>(type: "boolean", nullable: false),
+                    CreadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ActualizadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreadoPor = table.Column<Guid>(type: "uuid", nullable: false),
+                    ActualizadoPor = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Usuarios", x => x.Id);
+                    table.PrimaryKey("PK_HistorialesEstadoOrden", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Usuarios_Tenants_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "Tenants",
+                        name: "FK_HistorialesEstadoOrden_Ordenes_OrdenId",
+                        column: x => x.OrdenId,
+                        principalTable: "Ordenes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Pagos",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OrdenId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Monto = table.Column<decimal>(type: "numeric", nullable: false),
+                    Metodo = table.Column<string>(type: "text", nullable: false),
+                    Fecha = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Eliminado = table.Column<bool>(type: "boolean", nullable: false),
+                    CreadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ActualizadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreadoPor = table.Column<Guid>(type: "uuid", nullable: false),
+                    ActualizadoPor = table.Column<Guid>(type: "uuid", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Pagos", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Pagos_Ordenes_OrdenId",
+                        column: x => x.OrdenId,
+                        principalTable: "Ordenes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -217,10 +267,29 @@ namespace Needlos.Infraestructura.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Ordenes_ClienteId",
-                table: "Ordenes",
-                column: "ClienteId");
+            migrationBuilder.InsertData(
+                table: "Roles",
+                columns: new[] { "Id", "Nombre" },
+                values: new object[,]
+                {
+                    { new Guid("00000000-0000-0000-0000-000000000001"), "SuperAdmin" },
+                    { new Guid("00000000-0000-0000-0000-000000000002"), "Admin" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Tenants",
+                columns: new[] { "Id", "Activo", "CreadoEn", "Nombre", "Slug" },
+                values: new object[] { new Guid("00000000-0000-0000-0000-000000000003"), true, new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "Sistema", "sistema" });
+
+            migrationBuilder.InsertData(
+                table: "Usuarios",
+                columns: new[] { "Id", "Activo", "Email", "PasswordHash", "Telefono", "TenantId" },
+                values: new object[] { new Guid("00000000-0000-0000-0000-000000000004"), true, "admin", "$2a$11$28e3BuDT5Q..C4crq9NVUuikukZGrdO0XOKwWTBKmxVmniCHtlC/6", "3133585900", new Guid("00000000-0000-0000-0000-000000000003") });
+
+            migrationBuilder.InsertData(
+                table: "UsuarioRoles",
+                columns: new[] { "RolId", "UsuarioId" },
+                values: new object[] { new Guid("00000000-0000-0000-0000-000000000001"), new Guid("00000000-0000-0000-0000-000000000004") });
 
             migrationBuilder.CreateIndex(
                 name: "IX_DetalleOrdenes_OrdenId",
@@ -233,8 +302,18 @@ namespace Needlos.Infraestructura.Migrations
                 column: "ServicioId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_HistorialesEstadoOrden_OrdenId",
+                table: "HistorialesEstadoOrden",
+                column: "OrdenId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MedidasClientes_ClienteId",
                 table: "MedidasClientes",
+                column: "ClienteId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Ordenes_ClienteId",
+                table: "Ordenes",
                 column: "ClienteId");
 
             migrationBuilder.CreateIndex(
@@ -246,7 +325,8 @@ namespace Needlos.Infraestructura.Migrations
                 name: "IX_Tenants_Slug",
                 table: "Tenants",
                 column: "Slug",
-                unique: true);
+                unique: true,
+                filter: "\"Activo\" = true");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UsuarioRoles_RolId",
@@ -257,31 +337,23 @@ namespace Needlos.Infraestructura.Migrations
                 name: "IX_Usuarios_Email",
                 table: "Usuarios",
                 column: "Email",
-                unique: true);
+                unique: true,
+                filter: "\"Activo\" = true");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Usuarios_TenantId",
                 table: "Usuarios",
                 column: "TenantId");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Ordenes_Clientes_ClienteId",
-                table: "Ordenes",
-                column: "ClienteId",
-                principalTable: "Clientes",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Ordenes_Clientes_ClienteId",
-                table: "Ordenes");
-
             migrationBuilder.DropTable(
                 name: "DetalleOrdenes");
+
+            migrationBuilder.DropTable(
+                name: "HistorialesEstadoOrden");
 
             migrationBuilder.DropTable(
                 name: "MedidasClientes");
@@ -296,7 +368,7 @@ namespace Needlos.Infraestructura.Migrations
                 name: "Servicios");
 
             migrationBuilder.DropTable(
-                name: "Clientes");
+                name: "Ordenes");
 
             migrationBuilder.DropTable(
                 name: "Roles");
@@ -305,39 +377,10 @@ namespace Needlos.Infraestructura.Migrations
                 name: "Usuarios");
 
             migrationBuilder.DropTable(
+                name: "Clientes");
+
+            migrationBuilder.DropTable(
                 name: "Tenants");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Ordenes_ClienteId",
-                table: "Ordenes");
-
-            migrationBuilder.AddColumn<string>(
-                name: "Datos",
-                table: "Ordenes",
-                type: "jsonb",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "Descripcion",
-                table: "Ordenes",
-                type: "text",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<DateTime>(
-                name: "FechaCreacion",
-                table: "Ordenes",
-                type: "timestamp with time zone",
-                nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
-
-            migrationBuilder.AddColumn<string>(
-                name: "NombreCliente",
-                table: "Ordenes",
-                type: "text",
-                nullable: false,
-                defaultValue: "");
         }
     }
 }

@@ -141,6 +141,39 @@ public class NeedlosDbContext : DbContext, INeedlosDbContext
         modelBuilder.Entity<HistorialEstadoOrden>()
             .Property(h => h.EstadoNuevo)
             .HasConversion<string>();
+
+        // ── Datos semilla (sistema) ───────────────────────────────
+        // IDs fijos — nunca cambiar. Coinciden con RolesConstantes.
+        modelBuilder.Entity<Rol>().HasData(
+            new Rol { Id = new Guid("00000000-0000-0000-0000-000000000001"), Nombre = "SuperAdmin" },
+            new Rol { Id = new Guid("00000000-0000-0000-0000-000000000002"), Nombre = "Admin" }
+        );
+
+        modelBuilder.Entity<Tenant>().HasData(new Tenant
+        {
+            Id      = new Guid("00000000-0000-0000-0000-000000000003"),
+            Nombre  = "Sistema",
+            Slug    = "sistema",
+            Activo  = true,
+            CreadoEn = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+
+        // SuperAdmin semilla: email=admin / password=admin
+        modelBuilder.Entity<Usuario>().HasData(new Usuario
+        {
+            Id           = new Guid("00000000-0000-0000-0000-000000000004"),
+            Email        = "admin",
+            PasswordHash = "$2a$11$28e3BuDT5Q..C4crq9NVUuikukZGrdO0XOKwWTBKmxVmniCHtlC/6",
+            TenantId     = new Guid("00000000-0000-0000-0000-000000000003"),
+            Telefono     = "3133585900",
+            Activo       = true
+        });
+
+        modelBuilder.Entity<UsuarioRol>().HasData(new UsuarioRol
+        {
+            UsuarioId = new Guid("00000000-0000-0000-0000-000000000004"),
+            RolId     = new Guid("00000000-0000-0000-0000-000000000001")
+        });
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

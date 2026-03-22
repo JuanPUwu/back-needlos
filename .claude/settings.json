@@ -4,7 +4,22 @@
       "Bash(dotnet ef:*)",
       "Bash(grep -E \"\\\\.cs$\")",
       "Bash(/tmp/needlos_report.txt:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(psql \"Host=localhost;Port=5432;Database=needlos_db;Username=postgres;Password=admin\" -c \":*)",
+      "Bash(where psql:*)",
+      "Read(//c/Program Files/PostgreSQL/**)",
+      "Bash(\"C:/Program Files/PostgreSQL/17/bin/psql.exe\" -U postgres -d needlos_db -c \":*)",
+      "Bash(cmd /c \"dir \"\"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\"\" 2>&1\")",
+      "Bash(cmd /c \"\"\"C:\\\\Program Files\\\\PostgreSQL\\\\17\\\\bin\\\\psql.exe\"\" -U postgres -d needlos_db -c \"\"SELECT Id, Nombre FROM Roles ORDER BY Id\"\" 2>&1\")",
+      "Bash(cmd /c \"\"\"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\psql.exe\"\" -U postgres -d needlos_db -c \"\"SELECT Id, Nombre FROM Roles ORDER BY Id\"\" 2>&1\")",
+      "Read(//c/tmp/**)",
+      "Bash(grep -v \"//\")",
+      "Read(//c/Users/Pablo/.nuget/packages/swashbuckle.aspnetcore/**)",
+      "Read(//c/Users/Pablo/.nuget/packages/microsoft.openapi/**)",
+      "Read(//c/Users/Pablo/.nuget/packages/swashbuckle.aspnetcore.swaggergen/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Pablo\\Documents\\NeedlOS\\Needlos.Infraestructura\\Migrations"
     ]
   }
 }

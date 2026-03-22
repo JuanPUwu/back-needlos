@@ -1,5 +1,5 @@
 #!/bin/bash
-# Reinicio completo para desarrollo: resetea BD, aplica migraciones y arranca la API.
+# Reinicio completo para desarrollo: resetea BD, regenera migraciones y arranca la API.
 
 set -e
 
@@ -8,6 +8,14 @@ dotnet ef database drop \
   --project Needlos.Infraestructura \
   --startup-project Needlos.Api \
   --force 2>&1 | grep -v "NU1603"
+
+echo ">>> Eliminando migraciones anteriores..."
+rm -f Needlos.Infraestructura/Migrations/*.cs
+
+echo ">>> Generando migración inicial..."
+dotnet ef migrations add InitialCreate \
+  --project Needlos.Infraestructura \
+  --startup-project Needlos.Api 2>&1 | grep -v "NU1603"
 
 echo ">>> Aplicando migraciones..."
 dotnet ef database update \

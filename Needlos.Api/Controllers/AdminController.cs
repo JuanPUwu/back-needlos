@@ -19,13 +19,14 @@ public class AdminController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>
-    /// Configura el usuario SuperAdmin del sistema. Solo puede ejecutarse una vez.
-    /// Si ya existe un SuperAdmin, retorna 409 Conflict.
-    /// </summary>
-    /// <response code="201">SuperAdmin creado. Devuelve el id del usuario.</response>
-    /// <response code="400">Datos inválidos.</response>
-    /// <response code="409">El SuperAdmin ya está configurado.</response>
+    /// <summary>Crea un nuevo SuperAdmin del sistema.</summary>
+    /// <remarks>
+    /// Endpoint público. Solo se puede usar hasta 2 veces — el sistema admite máximo 2 SuperAdmins.
+    /// El SuperAdmin tiene acceso global a todos los tenants del sistema.
+    /// </remarks>
+    /// <response code="201">SuperAdmin creado. Devuelve el id del nuevo usuario.</response>
+    /// <response code="400">Los datos enviados no son válidos.</response>
+    /// <response code="409">Ya existen 2 SuperAdmins configurados. No se pueden crear más.</response>
     [HttpPost("setup")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -37,9 +38,10 @@ public class AdminController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, new { id });
     }
 
-    /// <summary>Devuelve todos los tenants del sistema paginados.</summary>
-    /// <response code="200">Lista paginada de tenants.</response>
-    /// <response code="400">Parámetros de paginación inválidos.</response>
+    /// <summary>Lista todas las sastrerías registradas en el sistema.</summary>
+    /// <remarks>Solo accesible para SuperAdmin. Devuelve id, nombre, slug, estado y fecha de registro.</remarks>
+    /// <response code="200">Lista paginada de tenants. Incluye total de páginas para la navegación.</response>
+    /// <response code="400">Los parámetros de paginación son inválidos (pagina o tamano fuera de rango).</response>
     [HttpGet("tenants")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -50,10 +52,11 @@ public class AdminController : ControllerBase
         return Ok(resultado);
     }
 
-    /// <summary>Devuelve los usuarios de un tenant específico paginados.</summary>
-    /// <response code="200">Lista paginada de usuarios del tenant.</response>
-    /// <response code="400">Parámetros inválidos.</response>
-    /// <response code="404">Tenant no encontrado.</response>
+    /// <summary>Lista los usuarios de una sastrería específica.</summary>
+    /// <remarks>Solo accesible para SuperAdmin. Muestra email, estado y roles de cada usuario.</remarks>
+    /// <response code="200">Lista paginada de usuarios con sus roles asignados.</response>
+    /// <response code="400">Los parámetros de paginación son inválidos.</response>
+    /// <response code="404">No existe ninguna sastrería con ese tenantId.</response>
     [HttpGet("tenants/{tenantId}/usuarios")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

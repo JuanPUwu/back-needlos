@@ -16,9 +16,15 @@ public class AuthController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>Registra un nuevo tenant con su usuario administrador.</summary>
-    /// <response code="201">Tenant creado. Devuelve el tenantId.</response>
-    /// <response code="409">El email ya está registrado.</response>
+    /// <summary>Registra una nueva sastrería en el sistema.</summary>
+    /// <remarks>
+    /// Crea el tenant (sastrería) y su usuario administrador en un solo paso.
+    /// El email debe ser único. La contraseña requiere mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.
+    /// El teléfono debe tener al menos 10 dígitos.
+    /// </remarks>
+    /// <response code="201">Sastrería creada correctamente. Devuelve el tenantId asignado.</response>
+    /// <response code="400">Los datos enviados no son válidos (email incorrecto, contraseña débil, etc.).</response>
+    /// <response code="409">Ya existe una cuenta con ese email.</response>
     [HttpPost("registrar")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -28,9 +34,13 @@ public class AuthController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, new { tenantId });
     }
 
-    /// <summary>Autentica un usuario y devuelve un JWT.</summary>
-    /// <response code="200">Login exitoso. Devuelve token, tenantId y email.</response>
-    /// <response code="401">Credenciales inválidas o usuario inactivo.</response>
+    /// <summary>Inicia sesión y obtiene el token de acceso.</summary>
+    /// <remarks>
+    /// Devuelve un JWT que debes incluir en el header Authorization de todas las demás peticiones.
+    /// El token expira en 24 horas. La cuenta de sistema usa email: "admin" / password: "admin".
+    /// </remarks>
+    /// <response code="200">Login exitoso. Devuelve el token JWT, el tenantId y el email del usuario.</response>
+    /// <response code="401">Email o contraseña incorrectos, o el usuario está desactivado.</response>
     [HttpPost("login")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

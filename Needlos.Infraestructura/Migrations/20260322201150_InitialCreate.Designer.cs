@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Needlos.Infraestructura.Migrations
 {
     [DbContext(typeof(NeedlosDbContext))]
-    [Migration("20260322182632_AgregarTelefonoYSuperAdminSemilla")]
-    partial class AgregarTelefonoYSuperAdminSemilla
+    [Migration("20260322201150_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -305,6 +305,18 @@ namespace Needlos.Infraestructura.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000001"),
+                            Nombre = "SuperAdmin"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000002"),
+                            Nombre = "Admin"
+                        });
                 });
 
             modelBuilder.Entity("Needlos.Dominio.Entidades.Servicio", b =>
@@ -370,6 +382,16 @@ namespace Needlos.Infraestructura.Migrations
                         .HasFilter("\"Activo\" = true");
 
                     b.ToTable("Tenants");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000003"),
+                            Activo = true,
+                            CreadoEn = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Nombre = "Sistema",
+                            Slug = "sistema"
+                        });
                 });
 
             modelBuilder.Entity("Needlos.Dominio.Entidades.Usuario", b =>
@@ -390,6 +412,7 @@ namespace Needlos.Infraestructura.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Telefono")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid>("TenantId")
@@ -404,6 +427,17 @@ namespace Needlos.Infraestructura.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("Usuarios");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000004"),
+                            Activo = true,
+                            Email = "admin",
+                            PasswordHash = "$2a$11$28e3BuDT5Q..C4crq9NVUuikukZGrdO0XOKwWTBKmxVmniCHtlC/6",
+                            Telefono = "3133585900",
+                            TenantId = new Guid("00000000-0000-0000-0000-000000000003")
+                        });
                 });
 
             modelBuilder.Entity("Needlos.Dominio.Entidades.UsuarioRol", b =>
@@ -419,6 +453,13 @@ namespace Needlos.Infraestructura.Migrations
                     b.HasIndex("RolId");
 
                     b.ToTable("UsuarioRoles");
+
+                    b.HasData(
+                        new
+                        {
+                            UsuarioId = new Guid("00000000-0000-0000-0000-000000000004"),
+                            RolId = new Guid("00000000-0000-0000-0000-000000000001")
+                        });
                 });
 
             modelBuilder.Entity("Needlos.Dominio.Entidades.DetalleOrden", b =>
