@@ -20,6 +20,7 @@ secrets.json
 *.sln.docstates
 .idea/
 *.DotSettings.user
+.claude/
 
 # ── Paquetes NuGet ────────────────────────────────────────────────────────────
 *.nupkg

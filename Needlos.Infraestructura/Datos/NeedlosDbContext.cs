@@ -15,7 +15,8 @@ public class NeedlosDbContext : DbContext, INeedlosDbContext
     // Campos que nunca se normalizan (sensibles o binarios)
     private static readonly HashSet<string> _camposExcluidos = new()
     {
-        "PasswordHash"
+        "PasswordHash",
+        "TokenHash"       // SHA-256 hex — case-sensitive, no se normaliza
     };
 
     public NeedlosDbContext(
@@ -34,11 +35,12 @@ public class NeedlosDbContext : DbContext, INeedlosDbContext
     public DbSet<Pago>    Pagos    { get; set; }
 
     // ── Entidades globales (sin filtro de tenant) ─────────────────
-    public DbSet<TipoPrenda> TiposPrendas { get; set; }
-    public DbSet<Tenant>     Tenants      { get; set; }
-    public DbSet<Usuario>    Usuarios     { get; set; }
-    public DbSet<Rol>        Roles        { get; set; }
-    public DbSet<UsuarioRol> UsuarioRoles { get; set; }
+    public DbSet<TipoPrenda>  TiposPrendas  { get; set; }
+    public DbSet<Tenant>      Tenants       { get; set; }
+    public DbSet<Usuario>     Usuarios      { get; set; }
+    public DbSet<Rol>         Roles         { get; set; }
+    public DbSet<UsuarioRol>  UsuarioRoles  { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -93,6 +95,17 @@ public class NeedlosDbContext : DbContext, INeedlosDbContext
             .HasOne(ur => ur.Rol)
             .WithMany()
             .HasForeignKey(ur => ur.RolId);
+
+        // ── RefreshToken ──────────────────────────────────────────
+        modelBuilder.Entity<RefreshToken>()
+            .HasOne(rt => rt.Usuario)
+            .WithMany()
+            .HasForeignKey(rt => rt.UsuarioId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RefreshToken>()
+            .HasIndex(rt => rt.TokenHash)
+            .IsUnique();
 
         // ── Índices únicos filtrados ──────────────────────────────
         modelBuilder.Entity<Tenant>()

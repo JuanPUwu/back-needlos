@@ -13,7 +13,8 @@ public interface INeedlosDbContext
     DbSet<Tenant>     Tenants      { get; }
     DbSet<Usuario>    Usuarios     { get; }
     DbSet<Rol>        Roles        { get; }
-    DbSet<UsuarioRol> UsuarioRoles { get; }
+    DbSet<UsuarioRol>    UsuarioRoles  { get; }
+    DbSet<RefreshToken>  RefreshTokens { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

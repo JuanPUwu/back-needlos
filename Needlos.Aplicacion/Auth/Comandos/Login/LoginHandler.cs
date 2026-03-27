@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Needlos.Aplicacion.Auth.DTOs;
 using Needlos.Aplicacion.Contratos;
 using Needlos.Aplicacion.Shared;
+using Needlos.Dominio.Entidades;
 
 namespace Needlos.Aplicacion.Auth.Comandos.Login;
 
@@ -33,13 +34,27 @@ public class LoginHandler : IRequestHandler<LoginCommand, LoginResultDto>
             throw new UnauthorizedAccessException("Usuario inactivo.");
 
         var rol = usuario.Roles.FirstOrDefault()?.Rol?.Nombre ?? RolesConstantes.Admin;
-        var token = _jwtService.GenerarToken(usuario, rol);
+        var accessToken = _jwtService.GenerarToken(usuario, rol);
+
+        var refreshTokenRaw = TokenHasher.GenerarRaw();
+
+        _context.RefreshTokens.Add(new RefreshToken
+        {
+            Id        = Guid.NewGuid(),
+            UsuarioId = usuario.Id,
+            TokenHash = TokenHasher.Hash(refreshTokenRaw),
+            Expira    = DateTime.UtcNow.AddDays(7),
+            CreadoEn  = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync(cancellationToken);
 
         return new LoginResultDto
         {
-            Token = token,
-            TenantId = usuario.TenantId,
-            Email = usuario.Email
+            AccessToken     = accessToken,
+            RefreshTokenRaw = refreshTokenRaw,
+            TenantId        = usuario.TenantId,
+            Email           = usuario.Email
         };
     }
 }

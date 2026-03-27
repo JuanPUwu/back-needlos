@@ -19,9 +19,7 @@ public class JwtService : IJwtService
 
     public string GenerarToken(Usuario usuario, string rol)
     {
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-
+        var key  = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
@@ -32,13 +30,13 @@ public class JwtService : IJwtService
             new Claim(ClaimTypes.Role, rol)
         };
 
-        var expiracion = double.Parse(_configuration["Jwt:ExpiracionHoras"]!);
+        var minutos = double.Parse(_configuration["Jwt:ExpiracionMinutosAccess"]!);
 
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(expiracion),
+            issuer:            _configuration["Jwt:Issuer"],
+            audience:          _configuration["Jwt:Audience"],
+            claims:            claims,
+            expires:           DateTime.UtcNow.AddMinutes(minutos),
             signingCredentials: creds
         );
 

@@ -221,6 +221,12 @@ Rol
 
 UsuarioRol
 └── UsuarioId + RolId (PK compuesta)
+
+RefreshToken                                ← gestión de sesiones (sin tenant, global)
+├── Id, UsuarioId (FK → Usuario, cascade)
+├── TokenHash (string, único — SHA-256 hex del token raw)
+├── Expira (DateTime UTC), Usado (bool), CreadoEn
+└── índice único en TokenHash
 ```
 
 ### Roles del sistema (sembrados en BD — IDs fijos)
@@ -510,12 +516,93 @@ public class CrearOrdenHandler(NeedlosDbContext context) : IRequestHandler<...>
 
 ## Autenticación
 
-- **Registro**: `POST /api/auth/registrar` — crea Tenant + Usuario admin (con rol `Admin`), slug auto-generado
-- **Login**: `POST /api/auth/login` — valida credenciales, retorna JWT con el rol real leído de BD
-- JWT contiene claims: `sub` (userId), `email`, `tenant_id`, `role`
-- Todos los endpoints de negocio llevan `[Authorize(Roles = "Admin,SuperAdmin")]`
-- `AuthController` es el único controller completamente público (sin `[Authorize]`)
-- Los 401/403 retornan JSON `{ "mensaje": "..." }` vía `JwtBearerEvents` configurados en `Program.cs` — **no pasan por `ExceptionHandlerMiddleware`** porque el middleware JWT actúa antes
+### Arquitectura de tokens (dual-token)
+
+| Token | Dónde vive | Duración | Propósito |
+|---|---|---|---|
+| **Access token** (JWT) | Memoria Angular (variable de servicio) | 10 min | Autorizar cada request vía `Authorization: Bearer` |
+| **Refresh token** (opaco, 64 bytes aleatorios) | Cookie HttpOnly del navegador | 7 días | Renovar el access token sin pedir credenciales |
+
+**El access token NUNCA se almacena en localStorage ni en cookies.** Al recargar la página Angular llama a `/api/auth/refresh` para obtener uno nuevo.
+
+### Flujo completo
+
+```
+POST /api/auth/login
+  → valida credenciales
+  → genera access token (JWT 10 min)
+  → genera refresh token (64 bytes aleatorios)
+  → guarda hash(refreshToken) en tabla RefreshTokens de BD
+  → body: { accessToken, tenantId, email }
+  → Set-Cookie: refreshToken=raw; HttpOnly; Secure; SameSite=None; Expires=+7days
+
+Request normal (Angular)
+  → Authorization: Bearer <accessToken>
+
+Access token expirado → Angular recibe 401 → llama /api/auth/refresh
+POST /api/auth/refresh
+  → navegador envía cookie HttpOnly automáticamente
+  → busca hash en BD, verifica no-usado y no-expirado
+  → marca anterior como Usado=true (rotación)
+  → genera nuevo par de tokens
+  → body: { accessToken }
+  → Set-Cookie: nuevo refreshToken
+
+POST /api/auth/logout
+  → marca refreshToken en BD como Usado=true
+  → Delete-Cookie: refreshToken
+  → 204 No Content (idempotente: funciona aunque la cookie no exista)
+```
+
+### Seguridad implementada
+
+- **Rotación de refresh tokens**: cada uso invalida el anterior → si alguien roba el token, la próxima renovación legítima lo invalida
+- **Hash en BD**: se guarda `SHA-256(tokenRaw)` — el token raw solo existe en la cookie y en tránsito
+- **Rate limiting**: `/auth/login` y `/auth/refresh` limitados a 5 req/min por IP (`[EnableRateLimiting("auth")]`)
+- **CORS con AllowCredentials**: solo acepta requests del frontend configurado en `Auth:FrontendUrl`
+- **`TokenHash` excluido de normalización** en `SaveChangesAsync` (junto con `PasswordHash`)
+
+### Entidad RefreshToken (global, sin tenant)
+
+```
+RefreshToken
+├── Id (Guid)
+├── UsuarioId (FK → Usuario, cascade delete)
+├── TokenHash (string, único — SHA-256 hex del token raw)
+├── Expira (DateTime UTC)
+├── Usado (bool, default: false)
+└── CreadoEn (DateTime UTC)
+```
+
+Índice único en `TokenHash` para búsqueda O(log n).
+
+### Configuración relevante
+
+```json
+"Jwt": {
+    "ExpiracionMinutosAccess": "10",
+    "ExpiracionDiasRefresh": "7"
+}
+"Auth": {
+    "CookieSegura": false,      // true en producción
+    "FrontendUrl": "http://localhost:4200"
+}
+```
+
+`CookieSegura: false` en desarrollo porque `Secure` requiere HTTPS. En producción ambos deben ser `true`.
+
+### Estructura de archivos de auth
+
+```
+Aplicacion/Auth/
+├── Comandos/Login/     LoginCommand + LoginHandler + LoginValidator
+├── Comandos/Registrar/ RegistrarTenantCommand + RegistrarTenantHandler + RegistrarTenantValidator
+├── Comandos/Refresh/   RefrescarTokenCommand + RefrescarTokenHandler
+├── Comandos/Logout/    CerrarSesionCommand + CerrarSesionHandler
+└── DTOs/               LoginResultDto + RefrescarTokenResultDto
+Aplicacion/Shared/
+└── TokenHasher.cs      GenerarRaw() + Hash() — SHA-256, interno al assembly
+```
 
 ### Comportamiento de 401 y 403
 
@@ -525,6 +612,15 @@ public class CrearOrdenHandler(NeedlosDbContext context) : IRequestHandler<...>
 | Token expirado | 401 | `"El token ha expirado."` |
 | Token con firma inválida | 401 | `"El token tiene una firma inválida."` |
 | Token válido pero rol insuficiente | 403 | `"No tienes permisos para acceder a este recurso."` |
+| Refresh token inválido/expirado/ya usado | 401 | `"El refresh token es inválido o ha expirado."` |
+
+Los 401/403 del middleware JWT **no pasan por `ExceptionHandlerMiddleware`** — se interceptan con `JwtBearerEvents` en `Program.cs`.
+
+### Otros detalles
+
+- Todos los endpoints de negocio llevan `[Authorize(Roles = "Admin,SuperAdmin")]`
+- `AuthController` es el único controller completamente público (sin `[Authorize]`)
+- JWT claims: `sub` (userId), `email`, `tenant_id`, `role`
 
 ---
 
@@ -540,10 +636,23 @@ Body:       { "nombreTienda": string, "email": string, "password": string, "tele
 201 Created { "tenantId": guid }
 409 Conflict — el email ya está registrado
 
-POST /api/auth/login
+POST /api/auth/login                                    [rate limit: 5/min]
 Body:    { "email": string, "password": string }
-200 OK   { "token": string, "tenantId": guid, "email": string }
+200 OK   { "accessToken": string, "tenantId": guid, "email": string }
+         + Set-Cookie: refreshToken (HttpOnly, SameSite=None)
 401 Unauthorized — credenciales inválidas o usuario inactivo
+429 Too Many Requests — demasiados intentos
+
+POST /api/auth/refresh                                  [rate limit: 5/min]
+(sin body — el navegador envía la cookie HttpOnly automáticamente)
+200 OK   { "accessToken": string }
+         + Set-Cookie: nuevo refreshToken rotado
+401 Unauthorized — sin cookie, o token inválido/expirado/ya usado
+429 Too Many Requests
+
+POST /api/auth/logout
+(sin body — usa la cookie HttpOnly)
+204 No Content — idempotente
 ```
 
 ### Admin sistema `[Authorize(Roles="SuperAdmin")]`

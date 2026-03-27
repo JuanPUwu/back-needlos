@@ -1,6 +1,9 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Needlos.Aplicacion.Auth.Comandos.Login;
+using Needlos.Aplicacion.Auth.Comandos.Logout;
+using Needlos.Aplicacion.Auth.Comandos.Refresh;
 using Needlos.Aplicacion.Auth.Comandos.Registrar;
 
 namespace Needlos.Api.Controllers;
@@ -10,10 +13,12 @@ namespace Needlos.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IMediator mediator)
+    public AuthController(IMediator mediator, IConfiguration configuration)
     {
         _mediator = mediator;
+        _configuration = configuration;
     }
 
     /// <summary>Registra una nueva sastrería en el sistema.</summary>
@@ -34,19 +39,83 @@ public class AuthController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, new { tenantId });
     }
 
-    /// <summary>Inicia sesión y obtiene el token de acceso.</summary>
+    /// <summary>Inicia sesión y obtiene los tokens de acceso.</summary>
     /// <remarks>
-    /// Devuelve un JWT que debes incluir en el header Authorization de todas las demás peticiones.
-    /// El token expira en 24 horas. La cuenta de sistema usa email: "admin" / password: "admin".
+    /// Devuelve el access token en el body (expira en 10 min) y establece el refresh token
+    /// en una cookie HttpOnly (expira en 7 días). El access token debe incluirse en el header
+    /// Authorization de todas las peticiones posteriores.
     /// </remarks>
-    /// <response code="200">Login exitoso. Devuelve el token JWT, el tenantId y el email del usuario.</response>
+    /// <response code="200">Login exitoso. Devuelve accessToken, tenantId y email.</response>
     /// <response code="401">Email o contraseña incorrectos, o el usuario está desactivado.</response>
+    /// <response code="429">Demasiados intentos de login. Espera antes de volver a intentar.</response>
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Login([FromBody] LoginCommand command)
     {
         var resultado = await _mediator.Send(command);
-        return Ok(resultado);
+
+        Response.Cookies.Append("refreshToken", resultado.RefreshTokenRaw, CookieOpciones());
+
+        return Ok(new
+        {
+            accessToken = resultado.AccessToken,
+            tenantId    = resultado.TenantId,
+            email       = resultado.Email
+        });
     }
+
+    /// <summary>Renueva el access token usando el refresh token de la cookie.</summary>
+    /// <remarks>
+    /// El navegador envía automáticamente la cookie HttpOnly. Si el refresh token es válido,
+    /// se rota (el anterior queda invalidado) y se emite un nuevo par de tokens.
+    /// </remarks>
+    /// <response code="200">Tokens renovados. Devuelve el nuevo accessToken.</response>
+    /// <response code="401">No hay refresh token, o es inválido/expirado/ya usado.</response>
+    /// <response code="429">Demasiadas solicitudes de refresh. Espera antes de volver a intentar.</response>
+    [HttpPost("refresh")]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public async Task<IActionResult> Refresh()
+    {
+        var token = Request.Cookies["refreshToken"];
+        if (string.IsNullOrEmpty(token))
+            return Unauthorized(new { mensaje = "No hay refresh token." });
+
+        var resultado = await _mediator.Send(new RefrescarTokenCommand(token));
+
+        Response.Cookies.Append("refreshToken", resultado.RefreshTokenRaw, CookieOpciones());
+
+        return Ok(new { accessToken = resultado.AccessToken });
+    }
+
+    /// <summary>Cierra la sesión del usuario actual.</summary>
+    /// <remarks>
+    /// Invalida el refresh token en base de datos y elimina la cookie.
+    /// Es idempotente: si la cookie no existe o el token ya estaba invalidado, responde 204 igualmente.
+    /// </remarks>
+    /// <response code="204">Sesión cerrada correctamente.</response>
+    [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Logout()
+    {
+        var token = Request.Cookies["refreshToken"];
+        if (!string.IsNullOrEmpty(token))
+            await _mediator.Send(new CerrarSesionCommand(token));
+
+        Response.Cookies.Delete("refreshToken");
+        return NoContent();
+    }
+
+    private CookieOptions CookieOpciones() => new()
+    {
+        HttpOnly = true,
+        Secure   = _configuration.GetValue<bool>("Auth:CookieSegura"),
+        SameSite = SameSiteMode.None,
+        Expires  = DateTimeOffset.UtcNow.AddDays(7)
+    };
 }
