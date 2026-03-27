@@ -21,23 +21,30 @@ public class ClientesController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>Lista todos los clientes de la sastrería.</summary>
-    /// <remarks>Devuelve los clientes ordenados alfabéticamente por nombre.</remarks>
+    /// <summary>Lista los clientes de la sastrería.</summary>
+    /// <remarks>
+    /// Devuelve los clientes ordenados por apellido y nombre.
+    /// Usa el parámetro <c>telefono</c> para filtrar por número — útil para el autocompletado al crear una orden.
+    /// </remarks>
     /// <param name="pagina">Número de página. Empieza en 1.</param>
     /// <param name="tamano">Cantidad de clientes por página. Máximo 100, por defecto 20.</param>
-    /// <response code="200">Lista paginada de clientes con el total de registros y páginas.</response>
+    /// <param name="telefono">Filtro parcial por número de teléfono (opcional).</param>
+    /// <response code="200">Lista paginada de clientes.</response>
     /// <response code="400">Los parámetros de paginación son inválidos.</response>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Obtener([FromQuery] int pagina = 1, [FromQuery] int tamano = 20)
+    public async Task<IActionResult> Obtener(
+        [FromQuery] int pagina = 1,
+        [FromQuery] int tamano = 20,
+        [FromQuery] string? telefono = null)
     {
-        var resultado = await _mediator.Send(new ObtenerClientesQuery(pagina, tamano));
+        var resultado = await _mediator.Send(new ObtenerClientesQuery(pagina, tamano, telefono));
         return Ok(resultado);
     }
 
     /// <summary>Obtiene el detalle de un cliente.</summary>
-    /// <response code="200">Datos del cliente: nombre, teléfono, email y fecha de registro.</response>
+    /// <response code="200">Datos del cliente: nombre, apellido, teléfono y fecha de registro.</response>
     /// <response code="404">No existe ningún cliente con ese id.</response>
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -49,8 +56,8 @@ public class ClientesController : ControllerBase
     }
 
     /// <summary>Registra un nuevo cliente en la sastrería.</summary>
-    /// <response code="201">Cliente creado correctamente. Devuelve el id asignado.</response>
-    /// <response code="400">Los datos son inválidos (nombre vacío, email incorrecto, etc.).</response>
+    /// <response code="201">Cliente creado. Devuelve el id asignado.</response>
+    /// <response code="400">Los datos son inválidos (nombre o apellido vacío, teléfono incorrecto, etc.).</response>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -75,7 +82,7 @@ public class ClientesController : ControllerBase
     }
 
     /// <summary>Elimina un cliente de la sastrería.</summary>
-    /// <remarks>El cliente no se borra físicamente de la base de datos, solo se marca como eliminado y deja de aparecer en las listas.</remarks>
+    /// <remarks>El cliente no se borra físicamente — se marca como inactivo y deja de aparecer en las listas.</remarks>
     /// <response code="204">Cliente eliminado correctamente.</response>
     /// <response code="404">No existe ningún cliente con ese id.</response>
     [HttpDelete("{id}")]

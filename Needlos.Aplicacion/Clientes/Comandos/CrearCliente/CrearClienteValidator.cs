@@ -10,13 +10,13 @@ public class CrearClienteValidator : AbstractValidator<CrearClienteCommand>
             .NotEmpty().WithMessage("El nombre es obligatorio.")
             .MaximumLength(100).WithMessage("El nombre no puede superar 100 caracteres.");
 
+        RuleFor(x => x.Apellido)
+            .NotEmpty().WithMessage("El apellido es obligatorio.")
+            .MaximumLength(100).WithMessage("El apellido no puede superar 100 caracteres.");
+
         RuleFor(x => x.Telefono)
             .NotEmpty().WithMessage("El teléfono es obligatorio.")
+            .MinimumLength(7).WithMessage("El teléfono debe tener al menos 7 dígitos.")
             .MaximumLength(20).WithMessage("El teléfono no puede superar 20 caracteres.");
-
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("El email es obligatorio.")
-            .EmailAddress().WithMessage("El email no tiene un formato válido.")
-            .MaximumLength(150).WithMessage("El email no puede superar 150 caracteres.");
     }
 }

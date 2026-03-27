@@ -17,28 +17,34 @@ public class ObtenerClientesHandler : IRequestHandler<ObtenerClientesQuery, Pagi
 
     public async Task<PaginadoDto<ClienteDto>> Handle(ObtenerClientesQuery request, CancellationToken cancellationToken)
     {
-        var total = await _context.Clientes.CountAsync(cancellationToken);
+        var query = _context.Clientes.AsQueryable();
 
-        var datos = await _context.Clientes
-            .OrderBy(c => c.Nombre)
+        if (!string.IsNullOrWhiteSpace(request.Telefono))
+            query = query.Where(c => c.Telefono.Contains(request.Telefono));
+
+        var total = await query.CountAsync(cancellationToken);
+
+        var datos = await query
+            .OrderBy(c => c.Apellido)
+            .ThenBy(c => c.Nombre)
             .Skip((request.Pagina - 1) * request.Tamano)
             .Take(request.Tamano)
             .Select(c => new ClienteDto
             {
-                Id = c.Id,
-                Nombre = c.Nombre,
-                Telefono = c.Telefono,
-                Email = c.Email,
+                Id            = c.Id,
+                Nombre        = c.Nombre,
+                Apellido      = c.Apellido,
+                Telefono      = c.Telefono,
                 FechaRegistro = c.FechaRegistro
             })
             .ToListAsync(cancellationToken);
 
         return new PaginadoDto<ClienteDto>
         {
-            Datos = datos,
-            Pagina = request.Pagina,
-            Tamano = request.Tamano,
-            Total = total
+            Datos    = datos,
+            Pagina   = request.Pagina,
+            Tamano   = request.Tamano,
+            Total    = total
         };
     }
 }

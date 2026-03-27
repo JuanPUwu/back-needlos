@@ -11,15 +11,15 @@ public class ActualizarClienteValidator : AbstractValidator<ActualizarClienteCom
 
         RuleFor(x => x.Nombre)
             .NotEmpty().WithMessage("El nombre es obligatorio.")
-            .MaximumLength(100).WithMessage("El nombre no puede superar los 100 caracteres.");
+            .MaximumLength(100).WithMessage("El nombre no puede superar 100 caracteres.");
+
+        RuleFor(x => x.Apellido)
+            .NotEmpty().WithMessage("El apellido es obligatorio.")
+            .MaximumLength(100).WithMessage("El apellido no puede superar 100 caracteres.");
 
         RuleFor(x => x.Telefono)
             .NotEmpty().WithMessage("El teléfono es obligatorio.")
-            .MaximumLength(20).WithMessage("El teléfono no puede superar los 20 caracteres.");
-
-        RuleFor(x => x.Email)
-            .EmailAddress().WithMessage("El email no tiene un formato válido.")
-            .MaximumLength(150).WithMessage("El email no puede superar los 150 caracteres.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Email));
+            .MinimumLength(7).WithMessage("El teléfono debe tener al menos 7 dígitos.")
+            .MaximumLength(20).WithMessage("El teléfono no puede superar 20 caracteres.");
     }
 }

@@ -20,15 +20,6 @@ public class ConfigurarSuperAdminHandler : IRequestHandler<ConfigurarSuperAdminC
 
     public async Task<Guid> Handle(ConfigurarSuperAdminCommand request, CancellationToken cancellationToken)
     {
-        // Solo pueden existir 2 SuperAdmins. Si ya se alcanzó el límite, se rechaza.
-        const int MaxSuperAdmins = 2;
-
-        var totalSuperAdmins = await _context.UsuarioRoles
-            .CountAsync(ur => ur.RolId == RolesConstantes.SuperAdminId, cancellationToken);
-
-        if (totalSuperAdmins >= MaxSuperAdmins)
-            throw new ConflictException($"Ya existen {MaxSuperAdmins} SuperAdmins configurados. No se pueden crear más.");
-
         if (await _context.Usuarios.AnyAsync(u => u.Email == request.Email, cancellationToken))
             throw new ConflictException($"El email '{request.Email}' ya está registrado.");
 

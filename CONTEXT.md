@@ -2,7 +2,7 @@
 
 ## ¿Qué es NeedlOS?
 
-SaaS multi-tenant para **gestión de sastrerías**. Cada tienda (tenant) gestiona sus propias órdenes, clientes, servicios y pagos de forma completamente aislada mediante una columna `TenantId` en todas las tablas.
+SaaS multi-tenant para **gestión de sastrerías**. Cada tienda (tenant) gestiona sus propias órdenes, clientes y pagos de forma completamente aislada mediante una columna `TenantId` en todas las tablas.
 
 Stack: **.NET 10 · ASP.NET Core · Entity Framework Core 10 · PostgreSQL · MediatR 12 · FluentValidation 11 · JWT**
 
@@ -47,23 +47,22 @@ NeedlOS/
 │
 ├── Needlos.Dominio/
 │   ├── Entidades/
-│   │   ├── EntidadBase.cs          ← base de todas las entidades tenant (Id, TenantId, Eliminado, CreadoEn, ActualizadoEn)
-│   │   ├── Orden.cs
-│   │   ├── HistorialEstadoOrden.cs ← registro inmutable de cada transición de estado (hereda EntidadBase)
-│   │   ├── Cliente.cs
-│   │   ├── Servicio.cs
-│   │   ├── DetalleOrden.cs
-│   │   ├── MedidasCliente.cs
-│   │   ├── Pago.cs
-│   │   ├── Tenant.cs               ← entidad global (no hereda EntidadBase)
-│   │   ├── Usuario.cs              ← entidad global
-│   │   ├── Rol.cs                  ← entidad global
-│   │   └── UsuarioRol.cs           ← tabla intermedia (PK compuesta)
+│   │   ├── EntidadBase.cs   ← base de entidades tenant (Id, TenantId, Eliminado, CreadoEn, ActualizadoEn, CreadoPor, ActualizadoPor)
+│   │   ├── Orden.cs         ← hereda EntidadBase; TipoOrden, navegación a Prendas y Pagos
+│   │   ├── Prenda.cs        ← hereda EntidadBase; CambiarEstado() lanza BusinessException si ya Entregada
+│   │   ├── Cliente.cs       ← hereda EntidadBase; Nombre, Apellido, Telefono
+│   │   ├── Pago.cs          ← hereda EntidadBase
+│   │   ├── TipoPrenda.cs    ← entidad global (no hereda EntidadBase); catálogo de 10 tipos semilla
+│   │   ├── Tenant.cs        ← entidad global
+│   │   ├── Usuario.cs       ← entidad global
+│   │   ├── Rol.cs           ← entidad global
+│   │   └── UsuarioRol.cs    ← tabla intermedia (PK compuesta)
 │   ├── Excepciones/
-│   │   └── BusinessException.cs    ← excepción de dominio puro → 400 (regla de negocio violada)
+│   │   └── BusinessException.cs  ← excepción de dominio puro → 400
 │   └── Enumeraciones/
-│       ├── EstadoOrden.cs
-│       └── MetodoPago.cs
+│       ├── EstadoPrenda.cs  ← EnProceso=0, Finalizado=1, Entregado=2
+│       ├── TipoOrden.cs     ← Arreglo=0, Confeccion=1
+│       └── MetodoPago.cs    ← Efectivo=0, Transferencia=1, Tarjeta=2
 │
 ├── Needlos.Aplicacion/
 │   ├── Contratos/                  ← PUERTOS (interfaces que Infraestructura implementa)
@@ -78,11 +77,15 @@ NeedlOS/
 │   ├── Behaviors/
 │   │   └── ValidationBehavior.cs  ← pipeline MediatR: valida antes de cada handler automáticamente
 │   ├── Shared/                     ← lógica reutilizable entre features (no son repositorios)
-│   │   ├── ClienteService.cs       ← ValidarExistenciaAsync(clienteId) → NotFoundException
-│   │   ├── OrdenService.cs         ← ValidarExistenciaAsync(ordenId)   → NotFoundException
-│   │   ├── ServicioService.cs      ← ValidarExistenciaAsync(servicioId) → NotFoundException
-│   │   ├── PaginadoDto.cs          ← wrapper genérico de respuesta paginada
-│   │   └── RolesConstantes.cs      ← IDs y nombres de roles del sistema (Admin, SuperAdmin)
+│   │   ├── ClienteService.cs  ← ValidarExistenciaAsync(clienteId) → NotFoundException
+│   │   ├── OrdenService.cs    ← ValidarExistenciaAsync(ordenId)   → NotFoundException
+│   │   ├── PaginadoDto.cs     ← wrapper genérico de respuesta paginada
+│   │   └── RolesConstantes.cs ← IDs y nombres de roles del sistema (Admin, SuperAdmin)
+│   ├── TiposPrendas/
+│   │   ├── Consultas/ObtenerTiposPrendas/
+│   │   │   ├── ObtenerTiposPrendasQuery.cs
+│   │   │   └── ObtenerTiposPrendasHandler.cs
+│   │   └── DTOs/TipoPrendaDto.cs
 │   ├── Admin/
 │   │   ├── Comandos/ConfigurarSuperAdmin/
 │   │   │   ├── ConfigurarSuperAdminCommand.cs
@@ -102,29 +105,25 @@ NeedlOS/
 │   ├── Ordenes/
 │   │   ├── Comandos/
 │   │   │   ├── CrearOrden/
-│   │   │   │   ├── CrearOrdenCommand.cs      (contiene también DetalleOrdenRequest)
-│   │   │   │   └── CrearOrdenHandler.cs
-│   │   │   └── ActualizarEstadoOrden/
-│   │   │       ├── ActualizarEstadoOrdenCommand.cs
-│   │   │       └── ActualizarEstadoOrdenHandler.cs
+│   │   │   │   ├── CrearOrdenCommand.cs      (contiene también PrendaRequest)
+│   │   │   │   ├── CrearOrdenHandler.cs
+│   │   │   │   └── CrearOrdenValidator.cs
+│   │   │   └── CambiarEstadoPrenda/
+│   │   │       ├── CambiarEstadoPrendaCommand.cs
+│   │   │       ├── CambiarEstadoPrendaHandler.cs
+│   │   │       └── CambiarEstadoPrendaValidator.cs
 │   │   ├── Consultas/
 │   │   │   ├── ObtenerOrdenes/
 │   │   │   │   ├── ObtenerOrdenesQuery.cs
-│   │   │   │   ├── ObtenerOrdenesHandler.cs
+│   │   │   │   ├── ObtenerOrdenesHandler.cs  ← expone MapearOrden() internal static para reutilizar
 │   │   │   │   └── ObtenerOrdenesValidator.cs
-│   │   │   ├── ObtenerOrdenPorId/
-│   │   │   │   ├── ObtenerOrdenPorIdQuery.cs
-│   │   │   │   └── ObtenerOrdenPorIdHandler.cs
-│   │   │   └── ObtenerHistorialOrden/
-│   │   │       ├── ObtenerHistorialOrdenQuery.cs
-│   │   │       └── ObtenerHistorialOrdenHandler.cs
+│   │   │   └── ObtenerOrdenPorId/
+│   │   │       ├── ObtenerOrdenPorIdQuery.cs
+│   │   │       └── ObtenerOrdenPorIdHandler.cs
 │   │   └── DTOs/
-│   │       ├── OrdenDto.cs         (contiene también DetalleOrdenDto)
-│   │       └── HistorialEstadoOrdenDto.cs
+│   │       └── OrdenDto.cs         (contiene también PrendaDto)
 │   ├── Clientes/       (misma estructura: Comandos/ Consultas/ DTOs/ — cada Comando tiene su Validator)
-│   ├── Servicios/      (misma estructura)
 │   ├── Pagos/          (Comandos/ + Consultas/ + DTOs/)
-│   ├── MedidasCliente/ (misma estructura: Comandos/ Consultas/ DTOs/)
 │   └── Auth/
 │       ├── Comandos/Login/     (LoginCommand + LoginHandler + LoginValidator)
 │       ├── Comandos/Registrar/ (RegistrarTenantCommand + RegistrarTenantHandler + RegistrarTenantValidator)
@@ -144,12 +143,11 @@ NeedlOS/
 └── Needlos.Api/
     ├── Controllers/
     │   ├── AuthController.cs             (público: /api/auth/registrar, /api/auth/login)
-    │   ├── AdminController.cs            (/api/admin/setup público; resto [Authorize(Roles="SuperAdmin")])
+    │   ├── AdminController.cs            ([Authorize(Roles="SuperAdmin")] en todos los endpoints)
     │   ├── OrdenesController.cs          ([Authorize(Roles="Admin,SuperAdmin")])
     │   ├── ClientesController.cs         ([Authorize(Roles="Admin,SuperAdmin")])
-    │   ├── ServiciosController.cs        ([Authorize(Roles="Admin,SuperAdmin")])
-    │   ├── PagosController.cs            ([Authorize(Roles="Admin,SuperAdmin")])
-    │   └── MedidasClienteController.cs   ([Authorize(Roles="Admin,SuperAdmin")], ruta: /api/clientes/{clienteId}/medidas)
+    │   ├── TipoPrendasController.cs      ([Authorize(Roles="Admin,SuperAdmin")], ruta: /api/tipos-prendas)
+    │   └── PagosController.cs            ([Authorize(Roles="Admin,SuperAdmin")])
     ├── Middleware/
     │   ├── CorrelationIdMiddleware.cs     ← asigna X-Correlation-Id a cada request
     │   ├── RequestLoggingMiddleware.cs    ← loguea método, path, status, duración y tenant
@@ -165,8 +163,9 @@ NeedlOS/
 ### Enumeraciones
 
 ```
-EstadoOrden: Pendiente=0, EnProceso=1, Listo=2, Entregado=3
-MetodoPago:  Efectivo=0, Transferencia=1, Tarjeta=2
+EstadoPrenda: EnProceso=0, Finalizado=1, Entregado=2
+TipoOrden:    Arreglo=0, Confeccion=1
+MetodoPago:   Efectivo=0, Transferencia=1, Tarjeta=2
 ```
 
 Se almacenan como **string** en PostgreSQL (`HasConversion<string>()`).
@@ -178,43 +177,38 @@ Al enviarlos por JSON en requests se usan como **entero** (valor del enum).
 
 ```
 Cliente
-├── Nombre, Telefono, Email, FechaRegistro
-├── → Ordenes (1:N)
-└── → Medidas (1:N MedidasCliente)
+├── Nombre, Apellido, Telefono, FechaRegistro
+└── → Ordenes (1:N)
 
 Orden
-├── ClienteId (FK → Cliente)
-├── Estado (EstadoOrden, default: Pendiente)
-├── PrecioTotal (calculado a partir de DetalleOrden), FechaEntrega
-├── → Detalles (1:N DetalleOrden)
-├── → Pagos (1:N Pago)
-└── → Historial (1:N HistorialEstadoOrden)
+├── ClienteId (FK → Cliente, restrict)
+├── TipoOrden (TipoOrden, default: Arreglo)
+├── → Prendas (1:N Prenda)         ← cascade delete
+└── → Pagos (1:N Pago)
 
-HistorialEstadoOrden
-├── OrdenId (FK → Orden, restrict)
-├── EstadoAnterior (EstadoOrden), EstadoNuevo (EstadoOrden)
-└── CreadoPor y CreadoEn (heredados) = quién y cuándo cambió el estado
-
-DetalleOrden
+Prenda
 ├── OrdenId (FK → Orden, cascade delete)
-├── ServicioId (FK → Servicio, restrict)
-├── Precio, Notas
-
-Servicio
-└── Nombre, PrecioBase
-
-MedidasCliente
-├── ClienteId (FK → Cliente, cascade delete)
-└── Pecho, Cintura, Largo (decimal), Observaciones
+├── TipoPrendaId (FK → TipoPrenda, restrict)
+├── Cantidad (int), Descripcion, PrecioPorUnidad (decimal)
+├── FechaEntrega (DateOnly)
+└── Estado (EstadoPrenda, default: EnProceso)
 
 Pago
 ├── OrdenId (FK → Orden, restrict)
 ├── Monto, Metodo (MetodoPago), Fecha
 ```
 
+**Campos derivados en `OrdenDto` (calculados al leer, NO almacenados en BD):**
+- `Estado` = estado más joven (menor valor de `EstadoPrenda`) entre todas las prendas
+- `FechaEntrega` = fecha más próxima entre todas las prendas
+- `PrecioTotal` = suma de `PrecioPorUnidad × Cantidad` de cada prenda
+
 ### Entidades globales (NO heredan EntidadBase, sin filtro tenant)
 
 ```
+TipoPrenda
+└── Id, Nombre  ← catálogo fijo (10 registros semilla, IDs fijos 00000000-0000-0000-0001-000000000001..10)
+
 Tenant
 └── Id, Nombre, Slug (único, auto-generado), Activo, CreadoEn
 
@@ -233,8 +227,8 @@ UsuarioRol
 
 | Rol | ID fijo | Descripción |
 |---|---|---|
-| `SuperAdmin` | `00000000-0000-0000-0000-000000000001` | Creador del sistema. Acceso global a todos los tenants. Se pueden crear máximo 2 via `POST /api/admin/setup`. Uno está pre-sembrado en BD (email: `admin`, password: `admin`). |
-| `Admin` | `00000000-0000-0000-0000-000000000002` | Dueño de una sastrería. Se asigna automáticamente al registrarse. |
+| `SuperAdmin` | `00000000-0000-0000-0000-000000000001` | Creador del sistema. Acceso global a todos los tenants. Se crean sin límite via `POST /api/admin/superadmins` (requiere SuperAdmin). Uno está pre-sembrado en BD (email: `admin`, password: `admin`) como bootstrap inicial. |
+| `Admin` | `00000000-0000-0000-0000-000000000002` | Dueño/encargado de una sastrería. Se asigna automáticamente al registrarse. |
 
 El **Tenant sistema** (`Id = 00000000-0000-0000-0000-000000000003`, slug `"sistema"`) es el tenant al que pertenece el SuperAdmin. Está reservado y no puede ser tomado por ninguna sastrería.
 
@@ -329,6 +323,19 @@ Convierte a JSON: { "mensaje": "...", "errores": [...] } + status code HTTP
 | `UnauthorizedAccessException` | BCL (.NET) | 401 | Credenciales inválidas o usuario inactivo |
 | `Exception` (cualquier otra) | — | 500 | Error inesperado — el mensaje real NO se expone al cliente |
 
+### 401 y 403 del middleware JWT
+
+Los errores de autenticación/autorización que genera el middleware JWT de ASP.NET Core **no lanzan excepciones** — se interceptan con `JwtBearerEvents` en `Program.cs` y retornan JSON directamente:
+
+| Escenario | HTTP | Mensaje |
+|---|---|---|
+| Sin token o token mal formado | 401 | `"Se requiere autenticación. Incluye un token JWT válido en el header Authorization."` |
+| Token expirado | 401 | `"El token ha expirado."` |
+| Token con firma inválida | 401 | `"El token tiene una firma inválida."` |
+| Token válido pero rol insuficiente | 403 | `"No tienes permisos para acceder a este recurso."` |
+
+Respuesta JSON: `{ "mensaje": "..." }` — mismo formato que el resto de errores.
+
 ### Reglas
 
 - Los handlers **lanzan excepciones**; los controllers **nunca** tienen try-catch
@@ -402,15 +409,11 @@ Aplicacion/
 | `RegistrarTenantCommand` | NombreTienda required ≤100, Email válido ≤150, Password ≥8 chars + mayúscula + minúscula + número + especial, Telefono required ≥10 dígitos ≤20 chars |
 | `LoginCommand` | Email required (sin validación de formato — permite el SuperAdmin semilla con email `admin`), Password required |
 | `ConfigurarSuperAdminCommand` | Email válido ≤150, Password ≥8 chars + mayúscula + minúscula + número + especial, Telefono required ≥10 dígitos ≤20 chars |
-| `CrearClienteCommand` | Nombre required ≤100, Teléfono required ≤20, Email válido ≤150 |
-| `ActualizarClienteCommand` | Id not empty, Nombre required ≤100, Teléfono required ≤20, Email válido ≤150 |
-| `CrearServicioCommand` | Nombre required ≤100, PrecioBase > 0 |
-| `ActualizarServicioCommand` | Id not empty, Nombre required ≤100, PrecioBase > 0 |
-| `CrearOrdenCommand` | ClienteId not empty, FechaEntrega futura, al menos 1 detalle, precio de cada detalle > 0 |
-| `ActualizarEstadoOrdenCommand` | OrdenId not empty, NuevoEstado valor de enum válido |
+| `CrearClienteCommand` | Nombre required ≤100, Apellido required ≤100, Telefono required ≥7 ≤20 chars |
+| `ActualizarClienteCommand` | Id not empty, Nombre required ≤100, Apellido required ≤100, Telefono required ≥7 ≤20 chars |
+| `CrearOrdenCommand` | ClienteId not empty, al menos 1 prenda; por prenda: TipoPrendaId not empty, Cantidad ≥1, Descripcion required ≤500, PrecioPorUnidad > 0, FechaEntrega ≥ hoy |
+| `CambiarEstadoPrendaCommand` | OrdenId not empty, PrendaId not empty, NuevoEstado valor de enum válido (0-2) |
 | `CrearPagoCommand` | OrdenId not empty, Monto > 0, Metodo valor de enum válido |
-| `CrearMedidasClienteCommand` | ClienteId not empty, Pecho/Cintura/Largo > 0 |
-| `ActualizarMedidasClienteCommand` | Id not empty, Pecho/Cintura/Largo > 0 |
 
 ### Formato de respuesta en error de validación (400)
 
@@ -446,25 +449,26 @@ No hay nada más que hacer: `AddValidatorsFromAssembly` lo registra automáticam
 
 Las entidades de negocio no son solo contenedores de datos. Cuando existen **reglas de negocio reales**, se expresan como métodos en la propia entidad. Esto garantiza que la invariante se cumple sin importar desde dónde se modifique la entidad.
 
-### Regla actual en `Orden`
+### Regla actual en `Prenda`
 
 ```csharp
-// Dominio/Entidades/Orden.cs
-public void CambiarEstado(EstadoOrden nuevoEstado)
+// Dominio/Entidades/Prenda.cs
+public void CambiarEstado(EstadoPrenda nuevoEstado)
 {
-    if (Estado == EstadoOrden.Entregado)
-        throw new BusinessException($"La orden ya fue entregada y no puede cambiar a '{nuevoEstado}'.");
+    if (Estado == EstadoPrenda.Entregado)
+        throw new BusinessException("La prenda ya fue entregada y no puede cambiar de estado.");
     Estado = nuevoEstado;
 }
 ```
 
-El handler llama `orden.CambiarEstado(estado)` en vez de `orden.Estado = estado` directamente. Si la transición es inválida, la entidad lanza `BusinessException` → middleware → 400.
+El handler llama `prenda.CambiarEstado(estado)` en vez de `prenda.Estado = estado` directamente. Si la prenda ya está Entregada, lanza `BusinessException` → middleware → 400.
+
+El **estado de la orden** no se almacena — se calcula al leer como el valor mínimo de `EstadoPrenda` entre todas sus prendas (el estado más joven en el flujo).
 
 ### Cuándo agregar lógica a una entidad
 
 Solo cuando haya una **invariante real del negocio** (no solo CRUD). Ejemplos futuros:
 - `Pago.Aplicar()` → verificar que no exceda el total de la orden
-- `Servicio.Desactivar()` → verificar que no tiene órdenes activas
 
 ---
 
@@ -510,7 +514,17 @@ public class CrearOrdenHandler(NeedlosDbContext context) : IRequestHandler<...>
 - **Login**: `POST /api/auth/login` — valida credenciales, retorna JWT con el rol real leído de BD
 - JWT contiene claims: `sub` (userId), `email`, `tenant_id`, `role`
 - Todos los endpoints de negocio llevan `[Authorize(Roles = "Admin,SuperAdmin")]`
-- `AuthController` es el único controller público (sin `[Authorize]`)
+- `AuthController` es el único controller completamente público (sin `[Authorize]`)
+- Los 401/403 retornan JSON `{ "mensaje": "..." }` vía `JwtBearerEvents` configurados en `Program.cs` — **no pasan por `ExceptionHandlerMiddleware`** porque el middleware JWT actúa antes
+
+### Comportamiento de 401 y 403
+
+| Escenario | HTTP | Mensaje devuelto |
+|---|---|---|
+| Sin token / token mal formado | 401 | `"Se requiere autenticación. Incluye un token JWT válido en el header Authorization."` |
+| Token expirado | 401 | `"El token ha expirado."` |
+| Token con firma inválida | 401 | `"El token tiene una firma inválida."` |
+| Token válido pero rol insuficiente | 403 | `"No tienes permisos para acceder a este recurso."` |
 
 ---
 
@@ -532,62 +546,40 @@ Body:    { "email": string, "password": string }
 401 Unauthorized — credenciales inválidas o usuario inactivo
 ```
 
-### Admin sistema
+### Admin sistema `[Authorize(Roles="SuperAdmin")]`
 
 ```
-POST /api/admin/setup                         ← público, máximo 2 veces (límite de SuperAdmins)
+POST /api/admin/superadmins
 Body:        { "email": string, "password": string, "telefono": string }
 201 Created  { "id": guid }
 400 Bad Request — input inválido
-409 Conflict — ya existen 2 SuperAdmins configurados
+401 Unauthorized — no autenticado
+403 Forbidden — no tiene rol SuperAdmin
+409 Conflict — el email ya está registrado
 
-GET /api/admin/tenants?pagina=1&tamano=20     ← [Authorize(Roles="SuperAdmin")]
+GET /api/admin/tenants?pagina=1&tamano=20
 200 OK  PaginadoDto<TenantAdminDto>  { datos, pagina, tamano, total, totalPaginas }
 400 Bad Request — parámetros de paginación inválidos
 
-GET /api/admin/tenants/{tenantId}/usuarios?pagina=1&tamano=20  ← [Authorize(Roles="SuperAdmin")]
+GET /api/admin/tenants/{tenantId}/usuarios?pagina=1&tamano=20
 200 OK  PaginadoDto<UsuarioAdminDto>
 400 Bad Request — parámetros inválidos
 404 Not Found — tenant no encontrado
 ```
 
-### Órdenes `[Authorize(Roles="Admin,SuperAdmin")]`
+### Tipos de prenda `[Authorize(Roles="Admin,SuperAdmin")]`
 
 ```
-GET /api/ordenes?pagina=1&tamano=20
-200 OK  PaginadoDto<OrdenDto>  { datos, pagina, tamano, total, totalPaginas }
-400 Bad Request — parámetros de paginación inválidos
-
-GET /api/ordenes/{id}
-200 OK  OrdenDto
-404 Not Found — orden no encontrada
-
-GET /api/ordenes/{id}/historial
-200 OK  HistorialEstadoOrdenDto[]  (ordenado cronológicamente)
-404 Not Found — orden no encontrada
-
-POST /api/ordenes
-Body: {
-  "clienteId": guid,
-  "fechaEntrega": datetime,
-  "detalles": [{ "servicioId": guid, "precio": decimal, "notas": string }]
-}
-201 Created { "id": guid }
-400 Bad Request — input inválido (validación)
-404 Not Found — el clienteId o algún servicioId no existe
-
-PUT /api/ordenes/{id}/estado
-Body: int  ← 0=Pendiente, 1=EnProceso, 2=Listo, 3=Entregado (ASP.NET Core deserializa automáticamente a EstadoOrden)
-204 No Content
-400 Bad Request — input inválido o transición inválida (ej: la orden ya está Entregada)
-404 Not Found — orden no encontrada
+GET /api/tipos-prendas
+200 OK  TipoPrendaDto[]  (lista completa ordenada alfabéticamente, sin paginar)
 ```
 
 ### Clientes `[Authorize(Roles="Admin,SuperAdmin")]`
 
 ```
-GET /api/clientes?pagina=1&tamano=20
+GET /api/clientes?pagina=1&tamano=20&telefono=
 200 OK  PaginadoDto<ClienteDto>  { datos, pagina, tamano, total, totalPaginas }
+        Ordenado por apellido + nombre. Filtro opcional por teléfono (búsqueda parcial).
 400 Bad Request — parámetros de paginación inválidos
 
 GET /api/clientes/{id}
@@ -595,14 +587,14 @@ GET /api/clientes/{id}
 404 Not Found — cliente no encontrado
 
 POST /api/clientes
-Body:        { "nombre": string, "telefono": string, "email": string }
+Body:        { "nombre": string, "apellido": string, "telefono": string }
 201 Created  { "id": guid }
-400 Bad Request — input inválido (validación)
+400 Bad Request — input inválido
 
 PUT /api/clientes/{id}
-Body:        { "nombre": string, "telefono": string, "email": string }
+Body:        { "nombre": string, "apellido": string, "telefono": string }
 204 No Content
-400 Bad Request — input inválido (validación)
+400 Bad Request — input inválido
 404 Not Found — cliente no encontrado
 
 DELETE /api/clientes/{id}
@@ -610,31 +602,38 @@ DELETE /api/clientes/{id}
 404 Not Found — cliente no encontrado
 ```
 
-### Servicios `[Authorize(Roles="Admin,SuperAdmin")]`
+### Órdenes `[Authorize(Roles="Admin,SuperAdmin")]`
 
 ```
-GET /api/servicios?pagina=1&tamano=20
-200 OK  PaginadoDto<ServicioDto>  { datos, pagina, tamano, total, totalPaginas }
+GET /api/ordenes?pagina=1&tamano=20
+200 OK  PaginadoDto<OrdenDto>
 400 Bad Request — parámetros de paginación inválidos
 
-GET /api/servicios/{id}
-200 OK  ServicioDto
-404 Not Found — servicio no encontrado
+GET /api/ordenes/{id}
+200 OK  OrdenDto  (incluye prendas con estado individual)
+404 Not Found — orden no encontrada
 
-POST /api/servicios
-Body:        { "nombre": string, "precioBase": decimal }
-201 Created  { "id": guid }
-400 Bad Request — input inválido (validación)
+POST /api/ordenes
+Body: {
+  "clienteId": guid,
+  "tipoOrden": int,           ← 0=Arreglo (default), 1=Confeccion
+  "prendas": [{
+    "tipoPrendaId": guid,
+    "cantidad": int,
+    "descripcion": string,
+    "precioPorUnidad": decimal,
+    "fechaEntrega": "YYYY-MM-DD"   ← DateOnly, no puede ser anterior al día actual
+  }]
+}
+201 Created { "id": guid }
+400 Bad Request — input inválido (sin prendas, fecha pasada, precio negativo, etc.)
+404 Not Found — clienteId o tipoPrendaId no existe
 
-PUT /api/servicios/{id}
-Body:        { "nombre": string, "precioBase": decimal }
+PUT /api/ordenes/{id}/prendas/{prendaId}/estado
+Body: int  ← 0=EnProceso, 1=Finalizado, 2=Entregado
 204 No Content
-400 Bad Request — input inválido (validación)
-404 Not Found — servicio no encontrado
-
-DELETE /api/servicios/{id}
-204 No Content
-404 Not Found — servicio no encontrado
+400 Bad Request — estado inválido o prenda ya entregada
+404 Not Found — orden o prenda no encontrada
 ```
 
 ### Pagos `[Authorize(Roles="Admin,SuperAdmin")]`
@@ -652,29 +651,6 @@ Body:        { "ordenId": guid, "monto": decimal, "metodo": int }
 404 Not Found — la ordenId no existe
 ```
 
-### Medidas de cliente `[Authorize(Roles="Admin,SuperAdmin")]`
-
-```
-GET /api/clientes/{clienteId}/medidas
-200 OK  MedidasClienteDto[]
-404 Not Found — cliente no encontrado
-
-POST /api/clientes/{clienteId}/medidas
-Body:        { "pecho": decimal, "cintura": decimal, "largo": decimal, "observaciones": string }
-201 Created  { "id": guid }
-400 Bad Request — input inválido (validación)
-404 Not Found — cliente no encontrado
-
-PUT /api/clientes/{clienteId}/medidas/{id}
-Body:        { "pecho": decimal, "cintura": decimal, "largo": decimal, "observaciones": string }
-204 No Content
-400 Bad Request — input inválido (validación)
-404 Not Found — medidas no encontradas
-
-DELETE /api/clientes/{clienteId}/medidas/{id}
-204 No Content
-404 Not Found — medidas no encontradas
-```
 
 ---
 
@@ -682,24 +658,22 @@ DELETE /api/clientes/{clienteId}/medidas/{id}
 
 ```
 OrdenDto
-├── id, clienteId, nombreCliente, estado (string), precioTotal, fechaEntrega, creadoEn
-└── detalles: DetalleOrdenDto[]
-       └── id, servicioId, nombreServicio, precio, notas
+├── id, clienteId, nombreCliente, apellidoCliente, tipoOrden (string), creadoEn
+├── estado (string)      ← derivado: estado más joven entre prendas
+├── precioTotal (decimal) ← derivado: suma de (precioPorUnidad × cantidad) de prendas
+├── fechaEntrega (DateOnly) ← derivada: fecha más próxima entre prendas
+└── prendas: PrendaDto[]
+       └── id, tipoPrendaId, tipoPrenda (string), cantidad, descripcion,
+           precioPorUnidad, precioTotal, fechaEntrega (DateOnly), estado (string)
 
 ClienteDto
-└── id, nombre, telefono, email, fechaRegistro
+└── id, nombre, apellido, telefono, fechaRegistro
 
-ServicioDto
-└── id, nombre, precioBase
+TipoPrendaDto
+└── id, nombre
 
 PagoDto
 └── id, ordenId, monto, metodo (string), fecha
-
-MedidasClienteDto
-└── id, clienteId, pecho, cintura, largo, observaciones
-
-HistorialEstadoOrdenDto
-└── id, estadoAnterior (string), estadoNuevo (string), cambiadoPor (guid), cambiadoEn
 
 TenantAdminDto
 └── id, nombre, slug, activo, creadoEn
@@ -734,8 +708,9 @@ UsuarioAdminDto
 4. **Handlers inyectan `INeedlosDbContext`, no `NeedlosDbContext`**
 5. **Controllers solo llaman `_mediator.Send(...)` — ninguna lógica de negocio en controllers**
 6. **Todas las entidades de negocio heredan `EntidadBase`** (TenantId, soft delete y timestamps automáticos)
-7. **Tenant, Usuario, Rol son globales** — no heredan EntidadBase, sin filtro de tenant
-8. **Nuevos controllers deben llevar `[Authorize(Roles = "Admin,SuperAdmin")]`** para endpoints de negocio, o `[Authorize(Roles = "SuperAdmin")]` para endpoints de gestión global. Solo `AuthController` y `POST /api/admin/setup` son públicos.
+7. **Tenant, Usuario, Rol y TipoPrenda son globales** — no heredan EntidadBase, sin filtro de tenant
+8. **Nuevos controllers deben llevar `[Authorize(Roles = "Admin,SuperAdmin")]`** para endpoints de negocio, o `[Authorize(Roles = "SuperAdmin")]` para endpoints de gestión global. Solo `AuthController` es completamente público.
+   **`TipoPrenda` es global pero requiere auth** — es un catálogo del sistema, no público.
 9. **Enums se almacenan como string en PostgreSQL** (legibilidad en BD)
 10. **No hay DELETE real** — siempre soft delete (`Eliminado = true`)
 11. **Toda nueva feature se documenta en CLAUDE.md** — endpoints con request/response, status codes y errores posibles. Sin documentación, la feature está incompleta.
@@ -756,7 +731,6 @@ Lógica reutilizable que varios handlers podrían necesitar. No son repositorios
 |---|---|---|
 | `ClienteService` | `ValidarExistenciaAsync(clienteId)` | Lanza `NotFoundException` si el cliente no existe en el tenant |
 | `OrdenService` | `ValidarExistenciaAsync(ordenId)` | Lanza `NotFoundException` si la orden no existe en el tenant |
-| `ServicioService` | `ValidarExistenciaAsync(servicioId)` | Lanza `NotFoundException` si el servicio no existe en el tenant |
 
 **Cuándo agregar un nuevo servicio shared:** cuando la misma query de verificación aparece (o aparecería) en 2 o más handlers. No antes.
 
@@ -787,7 +761,9 @@ Valores default: `pagina=1`, `tamano=20`. Límite máximo: `tamano=100`.
 
 ### Orden de resultados
 - Órdenes: `OrderByDescending(CreadoEn)` — las más recientes primero
-- Clientes: `OrderBy(Nombre)` — alfabético
+- Clientes: `OrderBy(Apellido).ThenBy(Nombre)` — alfabético por apellido
+
+> **Excepción:** `GET /api/tipos-prendas` no es paginado — el catálogo es fijo (10 registros) y se devuelve completo.
 - Servicios: `OrderBy(Nombre)` — alfabético
 
 ### Cómo agregar paginación a una nueva feature

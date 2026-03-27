@@ -3,8 +3,8 @@ using MediatR;
 namespace Needlos.Aplicacion.Clientes.Comandos.ActualizarCliente;
 
 public record ActualizarClienteCommand(
-    Guid Id,
+    Guid   Id,
     string Nombre,
-    string Telefono,
-    string Email
+    string Apellido,
+    string Telefono
 ) : IRequest<Unit>;

@@ -21,18 +21,21 @@ public class AdminController : ControllerBase
 
     /// <summary>Crea un nuevo SuperAdmin del sistema.</summary>
     /// <remarks>
-    /// Endpoint público. Solo se puede usar hasta 2 veces — el sistema admite máximo 2 SuperAdmins.
+    /// Solo accesible para SuperAdmin. Crea un nuevo usuario con rol SuperAdmin sin límite de cantidad.
     /// El SuperAdmin tiene acceso global a todos los tenants del sistema.
     /// </remarks>
     /// <response code="201">SuperAdmin creado. Devuelve el id del nuevo usuario.</response>
     /// <response code="400">Los datos enviados no son válidos.</response>
-    /// <response code="409">Ya existen 2 SuperAdmins configurados. No se pueden crear más.</response>
-    [HttpPost("setup")]
-    [AllowAnonymous]
+    /// <response code="401">No autenticado.</response>
+    /// <response code="403">No tiene permisos de SuperAdmin.</response>
+    /// <response code="409">El email ya está registrado.</response>
+    [HttpPost("superadmins")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Setup([FromBody] ConfigurarSuperAdminCommand command)
+    public async Task<IActionResult> CrearSuperAdmin([FromBody] ConfigurarSuperAdminCommand command)
     {
         var id = await _mediator.Send(command);
         return StatusCode(StatusCodes.Status201Created, new { id });

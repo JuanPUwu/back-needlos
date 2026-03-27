@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Needlos.Aplicacion.Contratos;
 using Needlos.Aplicacion.Excepciones;
 using Needlos.Aplicacion.Ordenes.DTOs;
+using Needlos.Aplicacion.Ordenes.Consultas.ObtenerOrdenes;
 
 namespace Needlos.Aplicacion.Ordenes.Consultas.ObtenerOrdenPorId;
 
@@ -19,32 +20,13 @@ public class ObtenerOrdenPorIdHandler : IRequestHandler<ObtenerOrdenPorIdQuery, 
     {
         var orden = await _context.Ordenes
             .Include(o => o.Cliente)
-            .Include(o => o.Detalles)
-                .ThenInclude(d => d.Servicio)
-            .Where(o => o.Id == request.Id)
-            .Select(o => new OrdenDto
-            {
-                Id = o.Id,
-                ClienteId = o.ClienteId,
-                NombreCliente = o.Cliente!.Nombre,
-                Estado = o.Estado.ToString(),
-                PrecioTotal = o.PrecioTotal,
-                FechaEntrega = o.FechaEntrega,
-                CreadoEn = o.CreadoEn,
-                Detalles = o.Detalles.Select(d => new DetalleOrdenDto
-                {
-                    Id = d.Id,
-                    ServicioId = d.ServicioId,
-                    NombreServicio = d.Servicio!.Nombre,
-                    Precio = d.Precio,
-                    Notas = d.Notas
-                }).ToList()
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+            .Include(o => o.Prendas)
+                .ThenInclude(p => p.TipoPrenda)
+            .FirstOrDefaultAsync(o => o.Id == request.Id, cancellationToken);
 
         if (orden is null)
             throw new NotFoundException($"Orden '{request.Id}' no encontrada.");
 
-        return orden;
+        return ObtenerOrdenesHandler.MapearOrden(orden);
     }
 }

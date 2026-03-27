@@ -38,7 +38,6 @@ builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
 // encapsulan verificaciones que varios handlers necesitarían duplicar.
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<OrdenService>();
-builder.Services.AddScoped<ServicioService>();
 
 // ── MediatR ───────────────────────────────────────────────────────
 // Un solo assembly: Aplicacion contiene Commands, Queries y Handlers.
@@ -117,6 +116,38 @@ builder.Services
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtKey))
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            // Sin token o token inválido/expirado → 401
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();
+
+                var mensaje = context.AuthenticateFailure?.GetType().Name switch
+                {
+                    "SecurityTokenExpiredException" => "El token ha expirado.",
+                    "SecurityTokenInvalidSignatureException" => "El token tiene una firma inválida.",
+                    _ when context.AuthenticateFailure != null => "El token es inválido.",
+                    _ => "Se requiere autenticación. Incluye un token JWT válido en el header Authorization."
+                };
+
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsJsonAsync(new { mensaje });
+            },
+
+            // Token válido pero rol insuficiente → 403
+            OnForbidden = async context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    mensaje = "No tienes permisos para acceder a este recurso."
+                });
+            }
         };
     });
 

@@ -1,5 +1,7 @@
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Needlos.Aplicacion.Contratos;
+using Needlos.Aplicacion.Excepciones;
 using Needlos.Aplicacion.Shared;
 using Needlos.Dominio.Entidades;
 
@@ -8,40 +10,47 @@ namespace Needlos.Aplicacion.Ordenes.Comandos.CrearOrden;
 public class CrearOrdenHandler : IRequestHandler<CrearOrdenCommand, Guid>
 {
     private readonly INeedlosDbContext _context;
-    private readonly ClienteService _clienteService;
-    private readonly ServicioService _servicioService;
+    private readonly ClienteService   _clienteService;
 
-    public CrearOrdenHandler(INeedlosDbContext context, ClienteService clienteService, ServicioService servicioService)
+    public CrearOrdenHandler(INeedlosDbContext context, ClienteService clienteService)
     {
-        _context = context;
+        _context        = context;
         _clienteService = clienteService;
-        _servicioService = servicioService;
     }
 
     public async Task<Guid> Handle(CrearOrdenCommand request, CancellationToken cancellationToken)
     {
         await _clienteService.ValidarExistenciaAsync(request.ClienteId, cancellationToken);
 
-        foreach (var detalle in request.Detalles)
-            await _servicioService.ValidarExistenciaAsync(detalle.ServicioId, cancellationToken);
+        // Validar que todos los TipoPrendaId existen
+        var tiposIds = request.Prendas.Select(p => p.TipoPrendaId).Distinct().ToList();
+        var tiposExistentes = await _context.TiposPrendas
+            .Where(t => tiposIds.Contains(t.Id))
+            .Select(t => t.Id)
+            .ToListAsync(cancellationToken);
+
+        var tipoFaltante = tiposIds.FirstOrDefault(id => !tiposExistentes.Contains(id));
+        if (tipoFaltante != default)
+            throw new NotFoundException($"Tipo de prenda '{tipoFaltante}' no encontrado.");
 
         var orden = new Orden
         {
-            Id = Guid.NewGuid(),
+            Id        = Guid.NewGuid(),
             ClienteId = request.ClienteId,
-            FechaEntrega = request.FechaEntrega,
-            PrecioTotal = request.Detalles.Sum(d => d.Precio)
+            TipoOrden = request.TipoOrden
         };
 
-        foreach (var detalle in request.Detalles)
+        foreach (var p in request.Prendas)
         {
-            orden.Detalles.Add(new DetalleOrden
+            orden.Prendas.Add(new Prenda
             {
-                Id = Guid.NewGuid(),
-                OrdenId = orden.Id,
-                ServicioId = detalle.ServicioId,
-                Precio = detalle.Precio,
-                Notas = detalle.Notas
+                Id             = Guid.NewGuid(),
+                OrdenId        = orden.Id,
+                TipoPrendaId   = p.TipoPrendaId,
+                Cantidad       = p.Cantidad,
+                Descripcion    = p.Descripcion,
+                PrecioPorUnidad = p.PrecioPorUnidad,
+                FechaEntrega   = p.FechaEntrega
             });
         }
 

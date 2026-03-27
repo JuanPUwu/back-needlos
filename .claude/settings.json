@@ -16,7 +16,10 @@
       "Bash(grep -v \"//\")",
       "Read(//c/Users/Pablo/.nuget/packages/swashbuckle.aspnetcore/**)",
       "Read(//c/Users/Pablo/.nuget/packages/microsoft.openapi/**)",
-      "Read(//c/Users/Pablo/.nuget/packages/swashbuckle.aspnetcore.swaggergen/**)"
+      "Read(//c/Users/Pablo/.nuget/packages/swashbuckle.aspnetcore.swaggergen/**)",
+      "Bash(rm App.xaml App.xaml.cs MainWindow.xaml MainWindow.xaml.cs AssemblyInfo.cs needlos.csproj needlos.csproj.user appsettings.json)",
+      "Bash(rm -rf bin/ obj/)",
+      "Bash(ls /c/Users/Pablo/Documents/NeedlOS/needlos-back/README*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Pablo\\Documents\\NeedlOS\\Needlos.Infraestructura\\Migrations"

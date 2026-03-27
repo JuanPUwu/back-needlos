@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Needlos.Aplicacion.Contratos;
 using Needlos.Dominio.Entidades;
+using Needlos.Dominio.Enumeraciones;
 using Needlos.Infraestructura.Tenancy;
 
 namespace Needlos.Infraestructura.Datos;
@@ -22,35 +23,30 @@ public class NeedlosDbContext : DbContext, INeedlosDbContext
         ITenantProvider tenantProvider
     ) : base(options)
     {
-        _tenantId = tenantProvider.GetTenantId();
+        _tenantId  = tenantProvider.GetTenantId();
         _usuarioId = tenantProvider.GetUsuarioId();
     }
 
     // ── Entidades por tenant ──────────────────────────────────────
-    public DbSet<Orden> Ordenes { get; set; }
-    public DbSet<HistorialEstadoOrden> HistorialesEstadoOrden { get; set; }
+    public DbSet<Orden>   Ordenes  { get; set; }
+    public DbSet<Prenda>  Prendas  { get; set; }
     public DbSet<Cliente> Clientes { get; set; }
-    public DbSet<Servicio> Servicios { get; set; }
-    public DbSet<DetalleOrden> DetalleOrdenes { get; set; }
-    public DbSet<MedidasCliente> MedidasClientes { get; set; }
-    public DbSet<Pago> Pagos { get; set; }
+    public DbSet<Pago>    Pagos    { get; set; }
 
     // ── Entidades globales (sin filtro de tenant) ─────────────────
-    public DbSet<Tenant> Tenants { get; set; }
-    public DbSet<Usuario> Usuarios { get; set; }
-    public DbSet<Rol> Roles { get; set; }
+    public DbSet<TipoPrenda> TiposPrendas { get; set; }
+    public DbSet<Tenant>     Tenants      { get; set; }
+    public DbSet<Usuario>    Usuarios     { get; set; }
+    public DbSet<Rol>        Roles        { get; set; }
     public DbSet<UsuarioRol> UsuarioRoles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // ── Filtros globales (tenant + soft delete) ───────────────
-        modelBuilder.Entity<Orden>().HasQueryFilter(o => o.TenantId == _tenantId && !o.Eliminado);
-        modelBuilder.Entity<HistorialEstadoOrden>().HasQueryFilter(h => h.TenantId == _tenantId && !h.Eliminado);
+        modelBuilder.Entity<Orden>()  .HasQueryFilter(o => o.TenantId == _tenantId && !o.Eliminado);
+        modelBuilder.Entity<Prenda>() .HasQueryFilter(p => p.TenantId == _tenantId && !p.Eliminado);
         modelBuilder.Entity<Cliente>().HasQueryFilter(c => c.TenantId == _tenantId && !c.Eliminado);
-        modelBuilder.Entity<Servicio>().HasQueryFilter(s => s.TenantId == _tenantId && !s.Eliminado);
-        modelBuilder.Entity<DetalleOrden>().HasQueryFilter(d => d.TenantId == _tenantId && !d.Eliminado);
-        modelBuilder.Entity<MedidasCliente>().HasQueryFilter(m => m.TenantId == _tenantId && !m.Eliminado);
-        modelBuilder.Entity<Pago>().HasQueryFilter(p => p.TenantId == _tenantId && !p.Eliminado);
+        modelBuilder.Entity<Pago>()   .HasQueryFilter(p => p.TenantId == _tenantId && !p.Eliminado);
 
         // ── Relaciones ────────────────────────────────────────────
         modelBuilder.Entity<Orden>()
@@ -59,34 +55,22 @@ public class NeedlosDbContext : DbContext, INeedlosDbContext
             .HasForeignKey(o => o.ClienteId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<DetalleOrden>()
-            .HasOne(d => d.Orden)
-            .WithMany(o => o.Detalles)
-            .HasForeignKey(d => d.OrdenId)
+        modelBuilder.Entity<Prenda>()
+            .HasOne(p => p.Orden)
+            .WithMany(o => o.Prendas)
+            .HasForeignKey(p => p.OrdenId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<DetalleOrden>()
-            .HasOne(d => d.Servicio)
+        modelBuilder.Entity<Prenda>()
+            .HasOne(p => p.TipoPrenda)
             .WithMany()
-            .HasForeignKey(d => d.ServicioId)
+            .HasForeignKey(p => p.TipoPrendaId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<MedidasCliente>()
-            .HasOne(m => m.Cliente)
-            .WithMany(c => c.Medidas)
-            .HasForeignKey(m => m.ClienteId)
-            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Pago>()
             .HasOne(p => p.Orden)
             .WithMany(o => o.Pagos)
             .HasForeignKey(p => p.OrdenId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<HistorialEstadoOrden>()
-            .HasOne(h => h.Orden)
-            .WithMany(o => o.Historial)
-            .HasForeignKey(h => h.OrdenId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // ── Global: Usuario - Tenant ──────────────────────────────
@@ -111,10 +95,6 @@ public class NeedlosDbContext : DbContext, INeedlosDbContext
             .HasForeignKey(ur => ur.RolId);
 
         // ── Índices únicos filtrados ──────────────────────────────
-        // El filtro "Activo = true" evita que un registro inactivo/desactivado
-        // bloquee la creación de uno nuevo con el mismo valor único.
-        // Sin esto, el soft-disable de un tenant o usuario impediría reutilizar
-        // el mismo slug o email aunque el registro ya no esté operativo.
         modelBuilder.Entity<Tenant>()
             .HasIndex(t => t.Slug)
             .IsUnique()
@@ -127,19 +107,15 @@ public class NeedlosDbContext : DbContext, INeedlosDbContext
 
         // ── Conversión de enums a string ──────────────────────────
         modelBuilder.Entity<Orden>()
-            .Property(o => o.Estado)
+            .Property(o => o.TipoOrden)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Prenda>()
+            .Property(p => p.Estado)
             .HasConversion<string>();
 
         modelBuilder.Entity<Pago>()
             .Property(p => p.Metodo)
-            .HasConversion<string>();
-
-        modelBuilder.Entity<HistorialEstadoOrden>()
-            .Property(h => h.EstadoAnterior)
-            .HasConversion<string>();
-
-        modelBuilder.Entity<HistorialEstadoOrden>()
-            .Property(h => h.EstadoNuevo)
             .HasConversion<string>();
 
         // ── Datos semilla (sistema) ───────────────────────────────
@@ -151,10 +127,10 @@ public class NeedlosDbContext : DbContext, INeedlosDbContext
 
         modelBuilder.Entity<Tenant>().HasData(new Tenant
         {
-            Id      = new Guid("00000000-0000-0000-0000-000000000003"),
-            Nombre  = "Sistema",
-            Slug    = "sistema",
-            Activo  = true,
+            Id       = new Guid("00000000-0000-0000-0000-000000000003"),
+            Nombre   = "Sistema",
+            Slug     = "sistema",
+            Activo   = true,
             CreadoEn = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
 
@@ -174,6 +150,20 @@ public class NeedlosDbContext : DbContext, INeedlosDbContext
             UsuarioId = new Guid("00000000-0000-0000-0000-000000000004"),
             RolId     = new Guid("00000000-0000-0000-0000-000000000001")
         });
+
+        // ── Semilla de TiposPrendas (IDs fijos) ───────────────────
+        modelBuilder.Entity<TipoPrenda>().HasData(
+            new TipoPrenda { Id = new Guid("00000000-0000-0000-0001-000000000001"), Nombre = "Pantalón" },
+            new TipoPrenda { Id = new Guid("00000000-0000-0000-0001-000000000002"), Nombre = "Camisa" },
+            new TipoPrenda { Id = new Guid("00000000-0000-0000-0001-000000000003"), Nombre = "Vestido" },
+            new TipoPrenda { Id = new Guid("00000000-0000-0000-0001-000000000004"), Nombre = "Saco" },
+            new TipoPrenda { Id = new Guid("00000000-0000-0000-0001-000000000005"), Nombre = "Traje completo" },
+            new TipoPrenda { Id = new Guid("00000000-0000-0000-0001-000000000006"), Nombre = "Falda" },
+            new TipoPrenda { Id = new Guid("00000000-0000-0000-0001-000000000007"), Nombre = "Chaqueta" },
+            new TipoPrenda { Id = new Guid("00000000-0000-0000-0001-000000000008"), Nombre = "Chaleco" },
+            new TipoPrenda { Id = new Guid("00000000-0000-0000-0001-000000000009"), Nombre = "Corbata" },
+            new TipoPrenda { Id = new Guid("00000000-0000-0000-0001-000000000010"), Nombre = "Abrigo" }
+        );
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -198,12 +188,12 @@ public class NeedlosDbContext : DbContext, INeedlosDbContext
                 switch (entrada.State)
                 {
                     case EntityState.Added:
-                        entidad.TenantId = _tenantId;
-                        entidad.CreadoEn = DateTime.UtcNow;
+                        entidad.TenantId  = _tenantId;
+                        entidad.CreadoEn  = DateTime.UtcNow;
                         entidad.CreadoPor = _usuarioId;
                         break;
                     case EntityState.Modified:
-                        entidad.ActualizadoEn = DateTime.UtcNow;
+                        entidad.ActualizadoEn  = DateTime.UtcNow;
                         entidad.ActualizadoPor = _usuarioId;
                         break;
                 }

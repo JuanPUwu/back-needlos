@@ -21,10 +21,10 @@ public class ObtenerClientePorIdHandler : IRequestHandler<ObtenerClientePorIdQue
             .Where(c => c.Id == request.Id)
             .Select(c => new ClienteDto
             {
-                Id = c.Id,
-                Nombre = c.Nombre,
-                Telefono = c.Telefono,
-                Email = c.Email,
+                Id            = c.Id,
+                Nombre        = c.Nombre,
+                Apellido      = c.Apellido,
+                Telefono      = c.Telefono,
                 FechaRegistro = c.FechaRegistro
             })
             .FirstOrDefaultAsync(cancellationToken);

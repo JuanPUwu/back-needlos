@@ -4,5 +4,8 @@ using Needlos.Aplicacion.Shared;
 
 namespace Needlos.Aplicacion.Clientes.Consultas.ObtenerClientes;
 
-public record ObtenerClientesQuery(int Pagina = 1, int Tamano = 20)
-    : IRequest<PaginadoDto<ClienteDto>>;
+public record ObtenerClientesQuery(
+    int     Pagina   = 1,
+    int     Tamano   = 20,
+    string? Telefono = null
+) : IRequest<PaginadoDto<ClienteDto>>;

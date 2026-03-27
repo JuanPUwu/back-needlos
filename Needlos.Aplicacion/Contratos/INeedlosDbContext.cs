@@ -5,16 +5,14 @@ namespace Needlos.Aplicacion.Contratos;
 
 public interface INeedlosDbContext
 {
-    DbSet<Orden> Ordenes { get; }
-    DbSet<HistorialEstadoOrden> HistorialesEstadoOrden { get; }
-    DbSet<Cliente> Clientes { get; }
-    DbSet<Servicio> Servicios { get; }
-    DbSet<DetalleOrden> DetalleOrdenes { get; }
-    DbSet<Needlos.Dominio.Entidades.MedidasCliente> MedidasClientes { get; }
-    DbSet<Pago> Pagos { get; }
-    DbSet<Tenant> Tenants { get; }
-    DbSet<Usuario> Usuarios { get; }
-    DbSet<Rol> Roles { get; }
+    DbSet<Orden>      Ordenes      { get; }
+    DbSet<Prenda>     Prendas      { get; }
+    DbSet<TipoPrenda> TiposPrendas { get; }
+    DbSet<Cliente>    Clientes     { get; }
+    DbSet<Pago>       Pagos        { get; }
+    DbSet<Tenant>     Tenants      { get; }
+    DbSet<Usuario>    Usuarios     { get; }
+    DbSet<Rol>        Roles        { get; }
     DbSet<UsuarioRol> UsuarioRoles { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

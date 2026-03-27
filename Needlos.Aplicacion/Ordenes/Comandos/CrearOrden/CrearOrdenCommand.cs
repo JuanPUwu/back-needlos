@@ -1,11 +1,18 @@
 using MediatR;
+using Needlos.Dominio.Enumeraciones;
 
 namespace Needlos.Aplicacion.Ordenes.Comandos.CrearOrden;
 
-public record DetalleOrdenRequest(Guid ServicioId, decimal Precio, string Notas);
+public record PrendaRequest(
+    Guid     TipoPrendaId,
+    int      Cantidad,
+    string   Descripcion,
+    decimal  PrecioPorUnidad,
+    DateOnly FechaEntrega
+);
 
 public record CrearOrdenCommand(
-    Guid ClienteId,
-    DateTime FechaEntrega,
-    List<DetalleOrdenRequest> Detalles
+    Guid            ClienteId,
+    TipoOrden       TipoOrden,
+    List<PrendaRequest> Prendas
 ) : IRequest<Guid>;

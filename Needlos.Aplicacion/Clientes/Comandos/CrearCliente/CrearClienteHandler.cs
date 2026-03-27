@@ -17,10 +17,10 @@ public class CrearClienteHandler : IRequestHandler<CrearClienteCommand, Guid>
     {
         var cliente = new Cliente
         {
-            Id = Guid.NewGuid(),
-            Nombre = request.Nombre,
-            Telefono = request.Telefono,
-            Email = request.Email,
+            Id            = Guid.NewGuid(),
+            Nombre        = request.Nombre,
+            Apellido      = request.Apellido,
+            Telefono      = request.Telefono,
             FechaRegistro = DateTime.UtcNow
         };
 

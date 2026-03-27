@@ -22,9 +22,9 @@ public class ActualizarClienteHandler : IRequestHandler<ActualizarClienteCommand
         if (cliente is null)
             throw new NotFoundException($"Cliente '{request.Id}' no encontrado.");
 
-        cliente.Nombre = request.Nombre;
+        cliente.Nombre   = request.Nombre;
+        cliente.Apellido = request.Apellido;
         cliente.Telefono = request.Telefono;
-        cliente.Email = request.Email;
 
         await _context.SaveChangesAsync(cancellationToken);
 
