@@ -5,7 +5,7 @@ using Needlos.Aplicacion.Excepciones;
 
 namespace Needlos.Aplicacion.Clientes.Comandos.EliminarCliente;
 
-public class EliminarClienteHandler : IRequestHandler<EliminarClienteCommand, Unit>
+public class EliminarClienteHandler : IRequestHandler<EliminarClienteCommand>
 {
     private readonly INeedlosDbContext _context;
 
@@ -14,7 +14,7 @@ public class EliminarClienteHandler : IRequestHandler<EliminarClienteCommand, Un
         _context = context;
     }
 
-    public async Task<Unit> Handle(EliminarClienteCommand request, CancellationToken cancellationToken)
+    public async Task Handle(EliminarClienteCommand request, CancellationToken cancellationToken)
     {
         var cliente = await _context.Clientes
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
@@ -24,7 +24,5 @@ public class EliminarClienteHandler : IRequestHandler<EliminarClienteCommand, Un
 
         cliente.Eliminado = true;
         await _context.SaveChangesAsync(cancellationToken);
-
-        return Unit.Value;
     }
 }

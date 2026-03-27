@@ -31,6 +31,9 @@ public class RefrescarTokenHandler : IRequestHandler<RefrescarTokenCommand, Refr
         if (existente is null || existente.Usado || existente.Expira <= DateTime.UtcNow)
             throw new UnauthorizedAccessException("El refresh token es inválido o ha expirado.");
 
+        if (!existente.Usuario.Activo)
+            throw new UnauthorizedAccessException("Usuario inactivo.");
+
         // Rotar: invalidar el actual y emitir uno nuevo
         existente.Usado = true;
 

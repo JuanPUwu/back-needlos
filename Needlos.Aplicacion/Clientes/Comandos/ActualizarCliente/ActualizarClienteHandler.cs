@@ -5,7 +5,7 @@ using Needlos.Aplicacion.Excepciones;
 
 namespace Needlos.Aplicacion.Clientes.Comandos.ActualizarCliente;
 
-public class ActualizarClienteHandler : IRequestHandler<ActualizarClienteCommand, Unit>
+public class ActualizarClienteHandler : IRequestHandler<ActualizarClienteCommand>
 {
     private readonly INeedlosDbContext _context;
 
@@ -14,7 +14,7 @@ public class ActualizarClienteHandler : IRequestHandler<ActualizarClienteCommand
         _context = context;
     }
 
-    public async Task<Unit> Handle(ActualizarClienteCommand request, CancellationToken cancellationToken)
+    public async Task Handle(ActualizarClienteCommand request, CancellationToken cancellationToken)
     {
         var cliente = await _context.Clientes
             .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
@@ -27,7 +27,5 @@ public class ActualizarClienteHandler : IRequestHandler<ActualizarClienteCommand
         cliente.Telefono = request.Telefono;
 
         await _context.SaveChangesAsync(cancellationToken);
-
-        return Unit.Value;
     }
 }

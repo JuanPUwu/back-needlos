@@ -7,4 +7,4 @@ public record ActualizarClienteCommand(
     string Nombre,
     string Apellido,
     string Telefono
-) : IRequest<Unit>;
+) : IRequest;
