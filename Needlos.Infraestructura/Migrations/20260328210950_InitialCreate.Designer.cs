@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Needlos.Infraestructura.Migrations
 {
     [DbContext(typeof(NeedlosDbContext))]
-    [Migration("20260327171526_AgregaRefreshTokens")]
-    partial class AgregaRefreshTokens
+    [Migration("20260328210950_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -411,7 +411,7 @@ namespace Needlos.Infraestructura.Migrations
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000004"),
                             Activo = true,
-                            Email = "admin",
+                            Email = "admin@example.com",
                             PasswordHash = "$2a$11$28e3BuDT5Q..C4crq9NVUuikukZGrdO0XOKwWTBKmxVmniCHtlC/6",
                             Telefono = "3133585900",
                             TenantId = new Guid("00000000-0000-0000-0000-000000000003")

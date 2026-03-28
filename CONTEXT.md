@@ -4,7 +4,7 @@
 
 SaaS multi-tenant para **gestión de sastrerías**. Cada tienda (tenant) gestiona sus propias órdenes, clientes y pagos de forma completamente aislada mediante una columna `TenantId` en todas las tablas.
 
-Stack: **.NET 10 · ASP.NET Core · Entity Framework Core 10 · PostgreSQL · MediatR 12 · FluentValidation 11 · JWT**
+Stack: **.NET 10 · ASP.NET Core · Entity Framework Core 10 · PostgreSQL · MediatR 12 · FluentValidation 11 · JWT · DotNetEnv 3.1**
 
 ---
 
@@ -69,7 +69,8 @@ NeedlOS/
 │   │   ├── INeedlosDbContext.cs
 │   │   ├── ITenantProvider.cs
 │   │   ├── IJwtService.cs
-│   │   └── IPasswordHasher.cs
+│   │   ├── IPasswordHasher.cs
+│   │   └── IEstadisticasBdService.cs  ← ObtenerEstadisticasAsync() → tamaño de tablas en PostgreSQL
 │   ├── Excepciones/                ← excepciones de aplicación (se convierten a HTTP en el middleware)
 │   │   ├── NotFoundException.cs    → 404
 │   │   ├── ConflictException.cs   → 409
@@ -77,16 +78,21 @@ NeedlOS/
 │   ├── Behaviors/
 │   │   └── ValidationBehavior.cs  ← pipeline MediatR: valida antes de cada handler automáticamente
 │   ├── Shared/                     ← lógica reutilizable entre features (no son repositorios)
-│   │   ├── ClienteService.cs  ← ValidarExistenciaAsync(clienteId) → NotFoundException
-│   │   ├── OrdenService.cs    ← ValidarExistenciaAsync(ordenId)   → NotFoundException
-│   │   ├── PaginadoDto.cs     ← wrapper genérico de respuesta paginada
-│   │   └── RolesConstantes.cs ← IDs y nombres de roles del sistema (Admin, SuperAdmin)
+│   │   ├── ClienteService.cs       ← ValidarExistenciaAsync(clienteId) → NotFoundException
+│   │   ├── OrdenService.cs         ← ValidarExistenciaAsync(ordenId)   → NotFoundException
+│   │   ├── TokenHasher.cs          ← GenerarRaw() (64 bytes aleatorios) + Hash() (SHA-256); internal
+│   │   ├── PaginadoDto.cs          ← IPaginadoQuery (interfaz) + PaginadoDto<T> (wrapper genérico paginado)
+│   │   ├── ValidacionExtensions.cs ← ReglaContrasena<T>() + ReglaPaginacion<T>() extension methods FluentValidation
+│   │   └── RolesConstantes.cs      ← IDs y nombres de roles del sistema (Admin, SuperAdmin)
 │   ├── TiposPrendas/
 │   │   ├── Consultas/ObtenerTiposPrendas/
 │   │   │   ├── ObtenerTiposPrendasQuery.cs
 │   │   │   └── ObtenerTiposPrendasHandler.cs
 │   │   └── DTOs/TipoPrendaDto.cs
 │   ├── Admin/
+│   │   ├── Comandos/LimpiarTokensExpirados/
+│   │   │   ├── LimpiarTokensExpiradosCommand.cs  ← devuelve int (tokens eliminados)
+│   │   │   └── LimpiarTokensExpiradosHandler.cs  ← ExecuteDeleteAsync sobre RefreshTokens expirados
 │   │   ├── Comandos/ConfigurarSuperAdmin/
 │   │   │   ├── ConfigurarSuperAdminCommand.cs
 │   │   │   ├── ConfigurarSuperAdminHandler.cs
@@ -99,9 +105,13 @@ NeedlOS/
 │   │   │   ├── ObtenerUsuariosPorTenantQuery.cs
 │   │   │   ├── ObtenerUsuariosPorTenantHandler.cs
 │   │   │   └── ObtenerUsuariosPorTenantValidator.cs
+│   │   ├── Consultas/ObtenerEstadisticasBd/
+│   │   │   ├── ObtenerEstadisticasBdQuery.cs
+│   │   │   └── ObtenerEstadisticasBdHandler.cs   ← delega a IEstadisticasBdService
 │   │   └── DTOs/
 │   │       ├── TenantAdminDto.cs
-│   │       └── UsuarioAdminDto.cs
+│   │       ├── UsuarioAdminDto.cs
+│   │       └── EstadisticasBdDto.cs               ← EstadisticasBdDto + EstadisticaTablaDto
 │   ├── Ordenes/
 │   │   ├── Comandos/
 │   │   │   ├── CrearOrden/
@@ -127,7 +137,10 @@ NeedlOS/
 │   └── Auth/
 │       ├── Comandos/Login/     (LoginCommand + LoginHandler + LoginValidator)
 │       ├── Comandos/Registrar/ (RegistrarTenantCommand + RegistrarTenantHandler + RegistrarTenantValidator)
-│       └── DTOs/               (LoginResultDto)
+│       ├── Comandos/Refresh/   (RefrescarTokenCommand + RefrescarTokenHandler)
+│       ├── Comandos/Logout/    (CerrarSesionCommand + CerrarSesionHandler)
+│       ├── DTOs/               (LoginResultDto + RefrescarTokenResultDto)
+│       └── (sin validator en Refresh/Logout — el token viene de cookie HttpOnly, no del body)
 │
 ├── Needlos.Infraestructura/
 │   ├── Auth/
@@ -135,6 +148,8 @@ NeedlOS/
 │   │   └── BcryptPasswordHasher.cs implements IPasswordHasher
 │   ├── Tenancy/
 │   │   └── TenantProvider.cs       implements ITenantProvider (lee "tenant_id" y "sub" del JWT)
+│   ├── Estadisticas/
+│   │   └── EstadisticasBdService.cs implements IEstadisticasBdService (raw SQL sobre catálogo PostgreSQL)
 │   ├── Datos/
 │   │   ├── NeedlosDbContext.cs      implements INeedlosDbContext (: DbContext, INeedlosDbContext)
 │   │   └── NeedlosDbContextFactory.cs  (para migraciones EF Core — usa DesignTimeTenantProvider dummy)
@@ -142,7 +157,7 @@ NeedlOS/
 │
 └── Needlos.Api/
     ├── Controllers/
-    │   ├── AuthController.cs             (público: /api/auth/registrar, /api/auth/login)
+    │   ├── AuthController.cs             (público: registrar, login [rate limit], refresh, logout)
     │   ├── AdminController.cs            ([Authorize(Roles="SuperAdmin")] en todos los endpoints)
     │   ├── OrdenesController.cs          ([Authorize(Roles="Admin,SuperAdmin")])
     │   ├── ClientesController.cs         ([Authorize(Roles="Admin,SuperAdmin")])
@@ -233,12 +248,12 @@ RefreshToken                                ← gestión de sesiones (sin tenant
 
 | Rol | ID fijo | Descripción |
 |---|---|---|
-| `SuperAdmin` | `00000000-0000-0000-0000-000000000001` | Creador del sistema. Acceso global a todos los tenants. Se crean sin límite via `POST /api/admin/superadmins` (requiere SuperAdmin). Uno está pre-sembrado en BD (email: `admin`, password: `admin`) como bootstrap inicial. |
+| `SuperAdmin` | `00000000-0000-0000-0000-000000000001` | Creador del sistema. Acceso global a todos los tenants. Se crean sin límite via `POST /api/admin/superadmins` (requiere SuperAdmin). Uno está pre-sembrado en BD (email: `admin@example.com`, password: `admin`) como bootstrap inicial. |
 | `Admin` | `00000000-0000-0000-0000-000000000002` | Dueño/encargado de una sastrería. Se asigna automáticamente al registrarse. |
 
 El **Tenant sistema** (`Id = 00000000-0000-0000-0000-000000000003`, slug `"sistema"`) es el tenant al que pertenece el SuperAdmin. Está reservado y no puede ser tomado por ninguna sastrería.
 
-El **SuperAdmin semilla** tiene `Id = 00000000-0000-0000-0000-000000000004`, email `admin`, contraseña `admin` y teléfono `3133585900`. Está insertado directamente en BD y su email no pasa por el validador de formato (es una cuenta de sistema). Cambiar la contraseña en producción.
+El **SuperAdmin semilla** tiene `Id = 00000000-0000-0000-0000-000000000004`, email `admin@example.com`, contraseña `admin` y teléfono `3133585900`. Está insertado directamente en BD y su email no pasa por el validador de formato (es una cuenta de sistema). Cambiar la contraseña en producción.
 
 Los nombres de los roles (`"Admin"`, `"SuperAdmin"`) se almacenan en BD tal cual (sin normalización, ya que son constantes del sistema). Deben coincidir exactamente con los valores en `RolesConstantes` y con los atributos `[Authorize(Roles = "...")]` de los controllers.
 
@@ -275,7 +290,7 @@ Toda string que se guarda pasa automáticamente por `NeedlosDbContext.SaveChange
 - **Espacios internos** — colapsa múltiples espacios en uno (`"Juan  Pérez"` → `"juan pérez"`)
 - **Lowercase** — todo en minúsculas
 
-**Campo excluido:** `PasswordHash` (BCrypt es case-sensitive, nunca se normaliza).
+**Campos excluidos:** `PasswordHash` (BCrypt es case-sensitive) y `TokenHash` (SHA-256 hex, también case-sensitive — nunca se normalizan).
 
 Si se agregan campos sensibles futuros (tokens, claves API, etc.), añadirlos al `HashSet _camposExcluidos` en `NeedlosDbContext`.
 
@@ -351,16 +366,36 @@ Respuesta JSON: `{ "mensaje": "..." }` — mismo formato que el resto de errores
 
 ### Ejemplo de handler correcto
 
+**Command que devuelve un valor:**
 ```csharp
-public async Task<Unit> Handle(ActualizarEstadoOrdenCommand request, CancellationToken ct)
+// Command: record CrearOrdenCommand(...) : IRequest<Guid>;
+public class CrearOrdenHandler : IRequestHandler<CrearOrdenCommand, Guid>
 {
-    var orden = await _context.Ordenes.FirstOrDefaultAsync(o => o.Id == request.OrdenId, ct);
-    if (orden is null)
-        throw new NotFoundException($"Orden '{request.OrdenId}' no encontrada.");
+    public async Task<Guid> Handle(CrearOrdenCommand request, CancellationToken ct)
+    {
+        var orden = new Orden(...);
+        _context.Ordenes.Add(orden);
+        await _context.SaveChangesAsync(ct);
+        return orden.Id;
+    }
+}
+```
 
-    orden.Estado = request.NuevoEstado;
-    await _context.SaveChangesAsync(ct);
-    return Unit.Value;
+**Command void (sin valor de retorno — MediatR 12):**
+```csharp
+// Command: record ActualizarClienteCommand(...) : IRequest;  ← sin genérico
+public class ActualizarClienteHandler : IRequestHandler<ActualizarClienteCommand>
+{
+    public async Task Handle(ActualizarClienteCommand request, CancellationToken ct)
+    {
+        var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.Id == request.Id, ct);
+        if (cliente is null)
+            throw new NotFoundException($"Cliente '{request.Id}' no encontrado.");
+
+        cliente.Actualizar(request.Nombre, request.Apellido, request.Telefono);
+        await _context.SaveChangesAsync(ct);
+        // No return — MediatR 12 no usa Unit.Value para comandos void
+    }
 }
 ```
 
@@ -397,15 +432,10 @@ Aplicacion/
 ├── Clientes/Comandos/CrearCliente/             CrearClienteValidator.cs
 ├── Clientes/Comandos/ActualizarCliente/        ActualizarClienteValidator.cs
 ├── Clientes/Consultas/ObtenerClientes/         ObtenerClientesValidator.cs      ← pagina/tamano
-├── MedidasCliente/Comandos/CrearMedidasCliente/     CrearMedidasClienteValidator.cs
-├── MedidasCliente/Comandos/ActualizarMedidasCliente/ ActualizarMedidasClienteValidator.cs
 ├── Ordenes/Comandos/CrearOrden/                CrearOrdenValidator.cs
-├── Ordenes/Comandos/ActualizarEstadoOrden/     ActualizarEstadoOrdenValidator.cs
+├── Ordenes/Comandos/CambiarEstadoPrenda/       CambiarEstadoPrendaValidator.cs
 ├── Ordenes/Consultas/ObtenerOrdenes/           ObtenerOrdenesValidator.cs       ← pagina/tamano
-├── Pagos/Comandos/CrearPago/                   CrearPagoValidator.cs
-├── Servicios/Comandos/CrearServicio/           CrearServicioValidator.cs
-├── Servicios/Comandos/ActualizarServicio/      ActualizarServicioValidator.cs
-└── Servicios/Consultas/ObtenerServicios/       ObtenerServiciosValidator.cs     ← pagina/tamano
+└── Pagos/Comandos/CrearPago/                   CrearPagoValidator.cs
 ```
 
 ### Reglas por command
@@ -413,7 +443,7 @@ Aplicacion/
 | Command | Reglas |
 |---|---|
 | `RegistrarTenantCommand` | NombreTienda required ≤100, Email válido ≤150, Password ≥8 chars + mayúscula + minúscula + número + especial, Telefono required ≥10 dígitos ≤20 chars |
-| `LoginCommand` | Email required (sin validación de formato — permite el SuperAdmin semilla con email `admin`), Password required |
+| `LoginCommand` | Email required (sin validación de formato — solo NotEmpty), Password required |
 | `ConfigurarSuperAdminCommand` | Email válido ≤150, Password ≥8 chars + mayúscula + minúscula + número + especial, Telefono required ≥10 dígitos ≤20 chars |
 | `CrearClienteCommand` | Nombre required ≤100, Apellido required ≤100, Telefono required ≥7 ≤20 chars |
 | `ActualizarClienteCommand` | Id not empty, Nombre required ≤100, Apellido required ≤100, Telefono required ≥7 ≤20 chars |
@@ -485,14 +515,18 @@ Solo cuando haya una **invariante real del negocio** (no solo CRUD). Ejemplos fu
 ```
 Aplicacion/[Feature]/
 ├── Comandos/[NombreAccion]/
-│   ├── [NombreAccion]Command.cs    → record : IRequest<T>
+│   ├── [NombreAccion]Command.cs    → record : IRequest<T>   (si devuelve valor)
+│   │                                  record : IRequest      (si es void — MediatR 12)
 │   └── [NombreAccion]Handler.cs   → class : IRequestHandler<Command, T>
+│                                      class : IRequestHandler<Command>    (si es void)
 ├── Consultas/[NombreConsulta]/
 │   ├── [NombreConsulta]Query.cs   → record : IRequest<T>
 │   └── [NombreConsulta]Handler.cs → class : IRequestHandler<Query, T>
 └── DTOs/
     └── [Feature]Dto.cs
 ```
+
+**Regla MediatR 12:** Los comandos que no devuelven nada usan `IRequest` (sin genérico) y `IRequestHandler<Command>` con `Task Handle(...)`. **No usar** `IRequest<Unit>` ni `return Unit.Value` — eso es el patrón antiguo.
 
 ### Registración MediatR
 
@@ -558,7 +592,7 @@ POST /api/auth/logout
 
 - **Rotación de refresh tokens**: cada uso invalida el anterior → si alguien roba el token, la próxima renovación legítima lo invalida
 - **Hash en BD**: se guarda `SHA-256(tokenRaw)` — el token raw solo existe en la cookie y en tránsito
-- **Rate limiting**: `/auth/login` y `/auth/refresh` limitados a 5 req/min por IP (`[EnableRateLimiting("auth")]`)
+- **Rate limiting**: `/auth/login` limitado a 5 req/min por IP (`[EnableRateLimiting("auth")]`)
 - **CORS con AllowCredentials**: solo acepta requests del frontend configurado en `Auth:FrontendUrl`
 - **`TokenHash` excluido de normalización** en `SaveChangesAsync` (junto con `PasswordHash`)
 
@@ -575,6 +609,8 @@ RefreshToken
 ```
 
 Índice único en `TokenHash` para búsqueda O(log n).
+
+Los tokens expirados se limpian bajo demanda (solo se eliminan los expirados — los usados pero aún vigentes se conservan durante su ventana de 7 días para detección de robo). La limpieza se dispara manualmente via `POST /api/admin/mantenimiento/limpiar-tokens`. No existe limpieza automática en background.
 
 ### Configuración relevante
 
@@ -643,7 +679,7 @@ Body:    { "email": string, "password": string }
 401 Unauthorized — credenciales inválidas o usuario inactivo
 429 Too Many Requests — demasiados intentos
 
-POST /api/auth/refresh                                  [rate limit: 5/min]
+POST /api/auth/refresh
 (sin body — el navegador envía la cookie HttpOnly automáticamente)
 200 OK   { "accessToken": string }
          + Set-Cookie: nuevo refreshToken rotado
@@ -674,6 +710,15 @@ GET /api/admin/tenants/{tenantId}/usuarios?pagina=1&tamano=20
 200 OK  PaginadoDto<UsuarioAdminDto>
 400 Bad Request — parámetros inválidos
 404 Not Found — tenant no encontrado
+
+POST /api/admin/mantenimiento/limpiar-tokens
+200 OK  { "eliminados": int }  ← tokens físicamente eliminados de la BD
+(La limpieza automática ocurre también cada 24h via LimpiezaTokensService)
+
+GET /api/admin/estadisticas/bd
+200 OK  EstadisticasBdDto  { tamanoBdBytes, tamanoBd, tablas: EstadisticaTablaDto[] }
+        EstadisticaTablaDto: { tabla, filasEstimadas, tamanoTotalBytes, tamanoTotal,
+                               tamanoDatosBytes, tamanoDatos, tamanoIndicesBytes, tamanoIndices }
 ```
 
 ### Tipos de prenda `[Authorize(Roles="Admin,SuperAdmin")]`
@@ -873,7 +918,6 @@ Valores default: `pagina=1`, `tamano=20`. Límite máximo: `tamano=100`.
 - Clientes: `OrderBy(Apellido).ThenBy(Nombre)` — alfabético por apellido
 
 > **Excepción:** `GET /api/tipos-prendas` no es paginado — el catálogo es fijo (10 registros) y se devuelve completo.
-- Servicios: `OrderBy(Nombre)` — alfabético
 
 ### Cómo agregar paginación a una nueva feature
 1. El Query record acepta `(int Pagina = 1, int Tamano = 20)`
@@ -936,7 +980,7 @@ Los datos iniciales del sistema viven en `NeedlosDbContext.OnModelCreating` usan
 
 - Roles `SuperAdmin` (`...0001`) y `Admin` (`...0002`)
 - Tenant sistema (`...0003`, slug `"sistema"`)
-- SuperAdmin semilla (`...0004`, email `admin`, password `admin`)
+- SuperAdmin semilla (`...0004`, email `admin@example.com`, password `admin`)
 - `UsuarioRol` que asigna SuperAdmin al usuario semilla
 
 **No se deben crear migraciones separadas para datos semilla** — todo va en `HasData`.
@@ -957,27 +1001,88 @@ dotnet ef database update \
   --startup-project Needlos.Api
 ```
 
-Conexión BD: `Host=localhost;Port=5432;Database=needlos_db;Username=postgres;Password=admin`
+La connection string se lee del `.env` (variable `ConnectionStrings__DefaultConnection`). Ver sección "Configuración de entorno (.env)".
+
+---
+
+## Configuración de entorno (.env)
+
+Toda la configuración sensible o variable por entorno se centraliza en un archivo `.env` en la raíz del repositorio. El archivo **no se commitea** (está en `.gitignore`). Hay una plantilla `.env.example` committed con instrucciones.
+
+### Variables requeridas
+
+```env
+# Entorno ASP.NET Core
+ASPNETCORE_ENVIRONMENT=Development
+
+# Base de datos (PostgreSQL)
+ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=needlos_db;Username=postgres;Password=admin
+
+# JWT — mínimo 32 caracteres, generar con: openssl rand -base64 48
+Jwt__Key=CLAVE_SECRETA_MINIMO_32_CARACTERES
+
+# Auth / CORS
+Auth__CookieSegura=false        # true en producción (requiere HTTPS)
+Auth__FrontendUrl=http://localhost:4200
+```
+
+### Convención doble guión bajo
+
+ASP.NET Core usa `:` como separador de sección. En variables de entorno (y por tanto en `.env`), se usa `__` (doble guión bajo) como separador equivalente:
+
+```
+Jwt__Key          →  IConfiguration["Jwt:Key"]
+Auth__FrontendUrl →  IConfiguration["Auth:FrontendUrl"]
+ConnectionStrings__DefaultConnection  →  builder.Configuration.GetConnectionString("DefaultConnection")
+```
+
+### Qué va dónde
+
+| Archivo | Contenido |
+|---|---|
+| `.env` | Secretos y valores de entorno: DB password, JWT key, URLs específicas del entorno |
+| `appsettings.json` | Defaults no sensibles y fijos: Issuer, Audience, ExpiracionMinutos, logging base |
+| `appsettings.Development.json` | Solo overrides de logging para desarrollo (no secretos) |
+
+### Carga en arranque
+
+`DotNetEnv` carga el `.env` como variables de entorno al arrancar la aplicación:
+
+```csharp
+// Program.cs — antes de builder.Build()
+Env.NoClobber().TraversePath().Load();
+```
+
+`NoClobber`: las variables del sistema tienen prioridad sobre `.env` (en producción no existe `.env` — las vars del sistema se usan directamente). `TraversePath`: busca el `.env` subiendo desde el directorio actual.
+
+`NeedlosDbContextFactory` también carga el `.env` para que las migraciones EF Core funcionen desde terminal sin hardcodear nada.
+
+### Fail-fast en arranque
+
+Si las variables críticas no están definidas, la aplicación falla inmediatamente con mensaje claro:
+
+```
+La clave JWT no está configurada. Establece la variable de entorno 'Jwt__Key'.
+La URL del frontend no está configurada. Establece 'Auth:FrontendUrl'.
+```
 
 ---
 
 ## Configuración JWT
 
-La clave JWT **nunca** se almacena en `appsettings.json` (está vacía en el repositorio).
-
-- **Desarrollo:** `appsettings.Development.json` (no commitear con secretos reales en producción)
-- **Producción:** variable de entorno `Jwt__Key` (doble guion bajo = separador de sección en ASP.NET Core)
-
-El arranque falla inmediatamente si la clave no está configurada.
+Los valores no sensibles están en `appsettings.json`. La clave JWT (`Jwt__Key`) va exclusivamente en `.env` / variable de entorno del sistema.
 
 ```json
+// appsettings.json
 "Jwt": {
-  "Key": "",
   "Issuer": "NeedlOS",
   "Audience": "NeedlOS",
-  "ExpiracionHoras": "24"
+  "ExpiracionMinutosAccess": "10",
+  "ExpiracionDiasRefresh": "7"
 }
 ```
+
+El arranque falla inmediatamente si `Jwt:Key` no está configurada.
 
 ---
 

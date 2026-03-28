@@ -8,4 +8,4 @@ public record ObtenerClientesQuery(
     int     Pagina   = 1,
     int     Tamano   = 20,
     string? Telefono = null
-) : IRequest<PaginadoDto<ClienteDto>>;
+) : IRequest<PaginadoDto<ClienteDto>>, IPaginadoQuery;

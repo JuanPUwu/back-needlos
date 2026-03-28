@@ -74,12 +74,9 @@ public class AuthController : ControllerBase
     /// </remarks>
     /// <response code="200">Tokens renovados. Devuelve el nuevo accessToken.</response>
     /// <response code="401">No hay refresh token, o es inválido/expirado/ya usado.</response>
-    /// <response code="429">Demasiadas solicitudes de refresh. Espera antes de volver a intentar.</response>
     [HttpPost("refresh")]
-    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Refresh()
     {
         var token = Request.Cookies["refreshToken"];
@@ -111,11 +108,18 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
-    private CookieOptions CookieOpciones() => new()
+    private CookieOptions CookieOpciones()
     {
-        HttpOnly = true,
-        Secure   = _configuration.GetValue<bool>("Auth:CookieSegura"),
-        SameSite = SameSiteMode.None,
-        Expires  = DateTimeOffset.UtcNow.AddDays(7)
-    };
+        var secure = _configuration.GetValue<bool>("Auth:CookieSegura");
+        return new()
+        {
+            HttpOnly = true,
+            Secure   = secure,
+            // SameSite=None requiere Secure=true (exigido por los navegadores).
+            // En desarrollo (Secure=false) se usa Lax: localhost:4200 → localhost:5193
+            // es same-site, por lo que Lax envía la cookie en todos los métodos.
+            SameSite = secure ? SameSiteMode.None : SameSiteMode.Lax,
+            Expires  = DateTimeOffset.UtcNow.AddDays(7)
+        };
+    }
 }

@@ -25,8 +25,8 @@ public class TenantProvider : ITenantProvider
 
     public Guid GetUsuarioId()
     {
-        var claim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)
-                 ?? _httpContextAccessor.HttpContext?.User?.FindFirst("sub");
+        // El middleware JWT mapea automáticamente "sub" → ClaimTypes.NameIdentifier
+        var claim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier);
 
         if (claim != null && Guid.TryParse(claim.Value, out var usuarioId))
             return usuarioId;

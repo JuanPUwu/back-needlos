@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Needlos.Aplicacion.Contratos;
 using Needlos.Aplicacion.Ordenes.DTOs;
 using Needlos.Aplicacion.Shared;
+using Needlos.Dominio.Entidades;
 using Needlos.Dominio.Enumeraciones;
 
 namespace Needlos.Aplicacion.Ordenes.Consultas.ObtenerOrdenes;
@@ -40,7 +41,7 @@ public class ObtenerOrdenesHandler : IRequestHandler<ObtenerOrdenesQuery, Pagina
         };
     }
 
-    internal static OrdenDto MapearOrden(Needlos.Dominio.Entidades.Orden o)
+    internal static OrdenDto MapearOrden(Orden o)
     {
         var prendas = o.Prendas.Select(p => new PrendaDto
         {

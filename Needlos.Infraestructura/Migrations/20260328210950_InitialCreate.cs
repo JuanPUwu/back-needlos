@@ -184,6 +184,28 @@ namespace Needlos.Infraestructura.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "RefreshTokens",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UsuarioId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TokenHash = table.Column<string>(type: "text", nullable: false),
+                    Expira = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Usado = table.Column<bool>(type: "boolean", nullable: false),
+                    CreadoEn = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RefreshTokens", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RefreshTokens_Usuarios_UsuarioId",
+                        column: x => x.UsuarioId,
+                        principalTable: "Usuarios",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "UsuarioRoles",
                 columns: table => new
                 {
@@ -241,7 +263,7 @@ namespace Needlos.Infraestructura.Migrations
             migrationBuilder.InsertData(
                 table: "Usuarios",
                 columns: new[] { "Id", "Activo", "Email", "PasswordHash", "Telefono", "TenantId" },
-                values: new object[] { new Guid("00000000-0000-0000-0000-000000000004"), true, "admin", "$2a$11$28e3BuDT5Q..C4crq9NVUuikukZGrdO0XOKwWTBKmxVmniCHtlC/6", "3133585900", new Guid("00000000-0000-0000-0000-000000000003") });
+                values: new object[] { new Guid("00000000-0000-0000-0000-000000000004"), true, "admin@example.com", "$2a$11$28e3BuDT5Q..C4crq9NVUuikukZGrdO0XOKwWTBKmxVmniCHtlC/6", "3133585900", new Guid("00000000-0000-0000-0000-000000000003") });
 
             migrationBuilder.InsertData(
                 table: "UsuarioRoles",
@@ -267,6 +289,17 @@ namespace Needlos.Infraestructura.Migrations
                 name: "IX_Prendas_TipoPrendaId",
                 table: "Prendas",
                 column: "TipoPrendaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshTokens_TokenHash",
+                table: "RefreshTokens",
+                column: "TokenHash",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshTokens_UsuarioId",
+                table: "RefreshTokens",
+                column: "UsuarioId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tenants_Slug",
@@ -301,6 +334,9 @@ namespace Needlos.Infraestructura.Migrations
 
             migrationBuilder.DropTable(
                 name: "Prendas");
+
+            migrationBuilder.DropTable(
+                name: "RefreshTokens");
 
             migrationBuilder.DropTable(
                 name: "UsuarioRoles");

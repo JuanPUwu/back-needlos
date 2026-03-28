@@ -1,5 +1,11 @@
 namespace Needlos.Aplicacion.Shared;
 
+public interface IPaginadoQuery
+{
+    int Pagina { get; }
+    int Tamano { get; }
+}
+
 /// <summary>
 /// Wrapper genérico de respuesta paginada.
 /// Todos los endpoints de lista devuelven este tipo en vez de List&lt;T&gt;.

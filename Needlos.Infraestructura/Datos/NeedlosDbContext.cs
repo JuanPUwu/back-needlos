@@ -147,11 +147,11 @@ public class NeedlosDbContext : DbContext, INeedlosDbContext
             CreadoEn = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
 
-        // SuperAdmin semilla: email=admin / password=admin
+        // SuperAdmin semilla: email=admin@example.com / password=admin
         modelBuilder.Entity<Usuario>().HasData(new Usuario
         {
             Id           = new Guid("00000000-0000-0000-0000-000000000004"),
-            Email        = "admin",
+            Email        = "admin@example.com",
             PasswordHash = "$2a$11$28e3BuDT5Q..C4crq9NVUuikukZGrdO0XOKwWTBKmxVmniCHtlC/6",
             TenantId     = new Guid("00000000-0000-0000-0000-000000000003"),
             Telefono     = "3133585900",

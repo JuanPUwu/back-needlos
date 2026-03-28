@@ -1,4 +1,5 @@
 using FluentValidation;
+using Needlos.Aplicacion.Shared;
 
 namespace Needlos.Aplicacion.Auth.Comandos.Registrar;
 
@@ -15,13 +16,7 @@ public class RegistrarTenantValidator : AbstractValidator<RegistrarTenantCommand
             .EmailAddress().WithMessage("El email no tiene un formato válido.")
             .MaximumLength(150).WithMessage("El email no puede superar 150 caracteres.");
 
-        RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("La contraseña es obligatoria.")
-            .MinimumLength(8).WithMessage("La contraseña debe tener al menos 8 caracteres.")
-            .Matches("[A-Z]").WithMessage("La contraseña debe tener al menos una letra mayúscula.")
-            .Matches("[a-z]").WithMessage("La contraseña debe tener al menos una letra minúscula.")
-            .Matches("[0-9]").WithMessage("La contraseña debe tener al menos un número.")
-            .Matches("[^a-zA-Z0-9]").WithMessage("La contraseña debe tener al menos un carácter especial.");
+        RuleFor(x => x.Password).ReglaContrasena();
 
         RuleFor(x => x.Telefono)
             .NotEmpty().WithMessage("El teléfono es obligatorio.")

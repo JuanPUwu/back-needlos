@@ -1,6 +1,7 @@
 using System.Text;
 using System.Reflection;
 using System.Threading.RateLimiting;
+using DotNetEnv;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
@@ -12,10 +13,18 @@ using Needlos.Aplicacion.Behaviors;
 using Needlos.Aplicacion.Contratos;
 using Needlos.Aplicacion.Shared;
 using Needlos.Api.Middleware;
+using Needlos.Api.Swagger;
 using Needlos.Infraestructura.Auth;
 using Needlos.Infraestructura.Datos;
+using Needlos.Infraestructura.Estadisticas;
 using Needlos.Infraestructura.Tenancy;
 using MediatR;
+
+// ── Cargar .env ───────────────────────────────────────────────────
+// NoClobber: las variables de entorno del sistema tienen prioridad sobre .env
+// (en producción no existe .env — se usan las vars del sistema directamente).
+// TraversePath: busca .env subiendo desde el directorio actual.
+Env.NoClobber().TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +41,7 @@ if (string.IsNullOrWhiteSpace(frontendUrl))
         "La URL del frontend no está configurada. " +
         "Establece 'Auth:FrontendUrl' en appsettings.");
 
+
 // ── DbContext ─────────────────────────────────────────────────────
 builder.Services.AddDbContext<NeedlosDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -47,6 +57,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
+builder.Services.AddScoped<IEstadisticasBdService, EstadisticasBdService>();
 
 // ── Servicios de aplicación compartidos ──────────────────────────
 builder.Services.AddScoped<ClienteService>();
@@ -77,17 +88,20 @@ builder.Services.AddCors(options =>
 });
 
 // ── Rate Limiting ─────────────────────────────────────────────────
-// Limita /auth/login y /auth/refresh a 5 requests por minuto por IP.
-// Protege contra brute force de credenciales y abuso del refresh.
+// Limita /auth/login y /auth/refresh a 5 requests por minuto POR IP.
+// Cada IP tiene su propio contador independiente (partitioned by RemoteIpAddress).
 builder.Services.AddRateLimiter(options =>
 {
-    options.AddFixedWindowLimiter("auth", opt =>
-    {
-        opt.PermitLimit              = 5;
-        opt.Window                   = TimeSpan.FromMinutes(1);
-        opt.QueueProcessingOrder     = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit               = 0;
-    });
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit          = 5,
+                Window               = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit           = 0
+            }));
 
     options.OnRejected = async (context, cancellationToken) =>
     {
@@ -127,13 +141,7 @@ builder.Services.AddSwaggerGen(c =>
         Description  = "Ingresa el access token obtenido en /api/auth/login. Ejemplo: eyJhbGci..."
     });
 
-    c.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecuritySchemeReference("Bearer"),
-            new List<string>()
-        }
-    });
+    c.OperationFilter<BearerAuthOperationFilter>();
 });
 
 // ── JWT Authentication ────────────────────────────────────────────

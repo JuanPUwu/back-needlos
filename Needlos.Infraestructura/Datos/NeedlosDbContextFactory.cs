@@ -1,3 +1,4 @@
+using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Needlos.Aplicacion.Contratos;
@@ -8,9 +9,17 @@ public class NeedlosDbContextFactory : IDesignTimeDbContextFactory<NeedlosDbCont
 {
     public NeedlosDbContext CreateDbContext(string[] args)
     {
-        var optionsBuilder = new DbContextOptionsBuilder<NeedlosDbContext>();
+        // Cargar .env para que las migraciones usen la misma connection string
+        // que la aplicación, sin hardcodear nada aquí.
+        Env.NoClobber().TraversePath().Load();
 
-        optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=needlos_db;Username=postgres;Password=admin");
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+            ?? throw new InvalidOperationException(
+                "La variable 'ConnectionStrings__DefaultConnection' no está definida. " +
+                "Asegúrate de tener un archivo .env en la raíz del proyecto.");
+
+        var optionsBuilder = new DbContextOptionsBuilder<NeedlosDbContext>();
+        optionsBuilder.UseNpgsql(connectionString);
 
         return new NeedlosDbContext(optionsBuilder.Options, new DesignTimeTenantProvider());
     }

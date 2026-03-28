@@ -2,6 +2,8 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Needlos.Aplicacion.Admin.Comandos.ConfigurarSuperAdmin;
+using Needlos.Aplicacion.Admin.Comandos.LimpiarTokensExpirados;
+using Needlos.Aplicacion.Admin.Consultas.ObtenerEstadisticasBd;
 using Needlos.Aplicacion.Admin.Consultas.ObtenerTenants;
 using Needlos.Aplicacion.Admin.Consultas.ObtenerUsuariosPorTenant;
 
@@ -68,6 +70,36 @@ public class AdminController : ControllerBase
         Guid tenantId, [FromQuery] int pagina = 1, [FromQuery] int tamano = 20)
     {
         var resultado = await _mediator.Send(new ObtenerUsuariosPorTenantQuery(tenantId, pagina, tamano));
+        return Ok(resultado);
+    }
+
+    /// <summary>Elimina manualmente los refresh tokens expirados de la base de datos.</summary>
+    /// <remarks>
+    /// La limpieza también se ejecuta automáticamente cada 24 horas al arrancar el servidor.
+    /// Solo elimina tokens cuya fecha de expiración ya pasó — los tokens usados pero aún
+    /// vigentes se conservan durante su ventana de 7 días (útil para detectar robo de tokens).
+    /// </remarks>
+    /// <response code="200">Limpieza completada. Devuelve la cantidad de tokens eliminados.</response>
+    [HttpPost("mantenimiento/limpiar-tokens")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> LimpiarTokensExpirados()
+    {
+        var eliminados = await _mediator.Send(new LimpiarTokensExpiradosCommand());
+        return Ok(new { eliminados });
+    }
+
+    /// <summary>Devuelve el tamaño actual de la base de datos desglosado por tabla.</summary>
+    /// <remarks>
+    /// Útil para monitorear el crecimiento de la BD desde el panel de administración.
+    /// Muestra para cada tabla: filas estimadas, tamaño de datos, tamaño de índices y tamaño total.
+    /// Los tamaños se incluyen en bytes (para cálculos) y en formato legible (ej: "1.2 MB").
+    /// </remarks>
+    /// <response code="200">Estadísticas de tamaño de la BD.</response>
+    [HttpGet("estadisticas/bd")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ObtenerEstadisticasBd()
+    {
+        var resultado = await _mediator.Send(new ObtenerEstadisticasBdQuery());
         return Ok(resultado);
     }
 }
