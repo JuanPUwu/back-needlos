@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: needlos-backend
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/needlos}
+    username: ${DB_USER:needlos}
+    password: ${DB_PASSWORD:needlos}
+
+  jpa:
+    hibernate:
+      # Flyway es el dueno del esquema. Hibernate solo valida que las
+      # entidades coincidan con las tablas; nunca modifica la BD.
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+# ── Configuracion propia de la aplicacion ────────────────────────────
+needlos:
+  jwt:
+    # DEBE tener al menos 32 caracteres (256 bits) para HS256.
+    # En produccion se inyecta por variable de entorno, nunca se versiona.
+    secret: ${JWT_SECRET:cambia-esta-clave-por-una-larga-y-secreta-de-32-bytes-minimo}
+    issuer: needlos
+    audience: needlos-clients
+    access-token-minutes: ${JWT_ACCESS_MINUTES:15}
+    refresh-token-days: ${JWT_REFRESH_DAYS:7}
+  cors:
+    allowed-origin: ${FRONTEND_URL:http://localhost:4200}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.needlos: INFO

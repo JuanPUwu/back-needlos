@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: needlos-db
+    environment:
+      POSTGRES_DB: needlos
+      POSTGRES_USER: needlos
+      POSTGRES_PASSWORD: needlos
+    # Puerto host 5433 para no chocar con un PostgreSQL local en 5432.
+    ports:
+      - "5433:5432"
+    volumes:
+      - needlos-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U needlos -d needlos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  needlos-db-data:
