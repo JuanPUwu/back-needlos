@@ -17,7 +17,7 @@ public class OpenApiConfig {
                         .title("NeedlOS API")
                         .version("0.1.0")
                         .description("ERP multi-tenant para sastrerias. "
-                                + "Obten un token en POST /api/auth/login y pulsa 'Authorize'."))
+                                + "Obten un token en POST /api/v1/auth/login y pulsa Authorize."))
                 .components(new Components().addSecuritySchemes("Bearer",
                         new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)

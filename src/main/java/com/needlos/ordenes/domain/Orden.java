@@ -1,7 +1,8 @@
 package com.needlos.ordenes.domain;
 
 import com.needlos.common.domain.BaseEntity;
-import com.needlos.common.exception.BusinessException;
+import com.needlos.common.exception.CodigoError;
+import com.needlos.common.exception.ReglaNegocioException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,6 +15,7 @@ import org.hibernate.annotations.SoftDelete;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -83,7 +85,7 @@ public class Orden extends BaseEntity {
         }
         return prendas.stream()
                 .map(Prenda::getEstado)
-                .min(java.util.Comparator.comparingInt(Enum::ordinal))
+                .min(Comparator.comparingInt(Enum::ordinal))
                 .map(e -> OrdenEstado.valueOf(e.name()))
                 .orElse(OrdenEstado.EN_PROCESO);
     }
@@ -91,10 +93,10 @@ public class Orden extends BaseEntity {
     /** Anula la orden. Exige una razon. Solo debe invocarse desde el servicio con permiso SASTRE_ADMIN. */
     public void anular(String razon) {
         if (anulada) {
-            throw new BusinessException("La orden ya esta anulada.");
+            throw new ReglaNegocioException(CodigoError.PEDIDO_YA_ANULADO, "El pedido ya esta anulado.");
         }
         if (razon == null || razon.isBlank()) {
-            throw new BusinessException("Debe indicar la razon de la anulacion.");
+            throw new ReglaNegocioException(CodigoError.VALIDACION, "Debe indicar la razon de la anulacion.");
         }
         this.anulada = true;
         this.razonAnulacion = razon.trim();

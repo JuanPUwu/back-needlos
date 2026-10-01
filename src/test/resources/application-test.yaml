@@ -1,0 +1,27 @@
+# Perfil TEST. La base de datos la aporta Testcontainers (@ServiceConnection),
+# que reemplaza estos valores de relleno.
+spring:
+  datasource:
+    url: jdbc:postgresql://reemplazado-por-testcontainers/needlos
+    username: needlos
+    password: needlos
+
+needlos:
+  correo:
+    cloudflare:
+      # Vacios: sin credenciales el enviador real no sale a internet en las pruebas
+      # (solo avisa en el log). Las pruebas que revisan correos usan @MockitoBean.
+      account-id: ""
+      token: ""
+  jwt:
+    secret: clave-solo-para-pruebas-automaticas-0123456789
+  sesion:
+    cookie-segura: false
+  cors:
+    allowed-origins: http://localhost:4200
+  recuperacion:
+    url-frontend: http://localhost:4200
+  rate-limit:
+    # Alto para que las pruebas no se bloqueen entre si; RateLimitTest lo baja.
+    auth-por-minuto: 10000
+    refresh-por-minuto: 10000

@@ -1,46 +1,128 @@
+# ─────────────────────────────────────────────────────────────────────
+#  Configuracion COMUN a todos los ambientes.
+#  · Los valores propios de cada ambiente viven en application-<perfil>.yaml.
+#  · Los secretos NO tienen valor por defecto: si falta la variable de
+#    entorno, la aplicacion no arranca (fail fast).
+#  · Perfiles: dev (desarrollo local), prod (produccion), test (pruebas).
+#  · Sin perfil explicito se usa dev (spring.profiles.default). Produccion
+#    SIEMPRE arranca con SPRING_PROFILES_ACTIVE=prod.
+#  · Secretos locales: archivo .env junto al pom.xml (fuera de Git; ver .env.example).
+# ─────────────────────────────────────────────────────────────────────
 spring:
   application:
     name: needlos-backend
 
+  profiles:
+    default: dev
+
+  config:
+    import: optional:file:.env[.properties]
+
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5433/needlos}
-    username: ${DB_USER:needlos}
-    password: ${DB_PASSWORD:needlos}
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 5000          # ms maximos esperando una conexion del pool
+      data-source-properties:
+        socketTimeout: 30               # s maximos de una consulta (driver PostgreSQL)
 
   jpa:
     hibernate:
-      # Flyway es el dueno del esquema. Hibernate solo valida que las
-      # entidades coincidan con las tablas; nunca modifica la BD.
+      # Flyway es el dueno del esquema; Hibernate solo valida.
       ddl-auto: validate
     open-in-view: false
     show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        jdbc:
+          time_zone: UTC
+        # Carga las colecciones LAZY por lotes (evita consultas N+1).
+        default_batch_fetch_size: 50
 
   flyway:
     enabled: true
-    baseline-on-migrate: true
+
+  transaction:
+    default-timeout: 30s
+
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100              # Reglas §5.5: nunca mas de 100 por pagina
+
+  web:
+    # Mensajes de validacion en espanol, sin depender del navegador.
+    locale: es
+    locale-resolver: fixed
 
 server:
   port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  tomcat:
+    connection-timeout: 20s
+  error:
+    include-stacktrace: never
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+# Swagger desactivado por defecto; solo el perfil dev lo activa.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+    path: /swagger-ui.html
 
 # ── Configuracion propia de la aplicacion ────────────────────────────
 needlos:
   jwt:
-    # DEBE tener al menos 32 caracteres (256 bits) para HS256.
-    # En produccion se inyecta por variable de entorno, nunca se versiona.
-    secret: ${JWT_SECRET:cambia-esta-clave-por-una-larga-y-secreta-de-32-bytes-minimo}
+    # Minimo 32 caracteres (256 bits) para HS256. Solo por variable de entorno.
+    secret: ${JWT_SECRET}
     issuer: needlos
     audience: needlos-clients
-    access-token-minutes: ${JWT_ACCESS_MINUTES:15}
-    refresh-token-days: ${JWT_REFRESH_DAYS:7}
+    access-token-minutes: 15
+  sesion:
+    duracion-dias: 7                    # sin uso durante este tiempo -> sesion vencida
+    cookie-segura: true                 # la cookie del refresh solo viaja por HTTPS
+    gracia-rotacion-segundos: 30        # peticiones simultaneas (varias pestanas) al rotar
   cors:
-    allowed-origin: ${FRONTEND_URL:http://localhost:4200}
-
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
+    # Origenes permitidos, separados por coma.
+    allowed-origins: ${FRONTEND_URLS}
+  google:
+    # Client ID de OAuth (es publico: tambien viaja en el frontend).
+    client-id: 298283901566-aqg61uis4q6j5epk143a1elt2jepgngj.apps.googleusercontent.com
+  seguridad:
+    # Politica de contenido para las respuestas de la API (JSON, sin HTML).
+    csp: "default-src 'none'; frame-ancestors 'none'"
+  correo:
+    cloudflare:
+      # API de envio de Cloudflare Email; cuenta y dominio needlos.com ya configurados ahi.
+      account-id: ${CLOUDFLARE_ACCOUNT_ID}
+      token: ${CLOUDFLARE_EMAIL_TOKEN}
+  recuperacion:
+    url-frontend: ${APP_URL}            # base del enlace que llega por correo
+    minutos-validez: 30                 # el enlace vence y solo sirve una vez
+    solicitudes-por-hora: 3             # por correo, para no inundar la bandeja
+  verificacion:
+    minutos-validez: 15                 # el codigo de 6 digitos vence y solo sirve una vez
+    intentos-maximos: 5                 # codigos errados antes de invalidarlo (hay que pedir otro)
+    solicitudes-por-hora: 3             # reenvios por correo, para no inundar la bandeja
+  rate-limit:
+    auth-por-minuto: 10                 # login, Google, selector, registro y recuperacion (por IP)
+    refresh-por-minuto: 30              # renovacion de sesion (por IP)
+    intentos-fallidos-por-cuenta: 5     # contrasenas erradas seguidas para un mismo correo...
+    bloqueo-cuenta-minutos: 15          # ...bloquean su login con contrasena este tiempo
 
 logging:
   level:

@@ -3,11 +3,11 @@ package com.needlos.clientes;
 import com.needlos.clientes.dto.ClienteDtos.ActualizarClienteRequest;
 import com.needlos.clientes.dto.ClienteDtos.ClienteResponse;
 import com.needlos.clientes.dto.ClienteDtos.CrearClienteRequest;
+import com.needlos.common.web.PaginaResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +26,7 @@ import java.util.UUID;
 @Tag(name = "Clientes")
 @SecurityRequirement(name = "Bearer")
 @RestController
-@RequestMapping("/api/clientes")
+@RequestMapping("/api/v1/clientes")
 public class ClienteController {
 
     private final ClienteService service;
@@ -41,10 +41,11 @@ public class ClienteController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.crear(req));
     }
 
-    @Operation(summary = "Lista clientes (paginado, con busqueda opcional)")
+    @Operation(summary = "Lista clientes (paginado, con busqueda opcional)",
+            description = "Ordenable por: nombre, apellido, fechaRegistro. Maximo 100 por pagina.")
     @GetMapping
-    public Page<ClienteResponse> listar(@RequestParam(required = false) String buscar, Pageable pageable) {
-        return service.listar(buscar, pageable);
+    public PaginaResponse<ClienteResponse> listar(@RequestParam(required = false) String buscar, Pageable pageable) {
+        return PaginaResponse.de(service.listar(buscar, pageable));
     }
 
     @Operation(summary = "Obtiene un cliente por id")

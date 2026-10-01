@@ -1,0 +1,16 @@
+# ─────────────────────────────────────────────────────────────────────
+#  Perfil PROD. Todo secreto llega por variable de entorno:
+#    DB_URL, DB_USER, DB_PASSWORD, JWT_SECRET, FRONTEND_URLS, APP_URL,
+#    CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_EMAIL_TOKEN
+#  Sin datos de prueba, sin Swagger, cookie Secure y cabeceras de seguridad.
+# ─────────────────────────────────────────────────────────────────────
+server:
+  # Detras de Cloudflare Tunnel: respeta X-Forwarded-For / X-Forwarded-Proto
+  # (IP real del cliente para el rate limiting y HTTPS para HSTS).
+  forward-headers-strategy: native
+
+logging:
+  structured:
+    format:
+      # Logs JSON (Elastic Common Schema); incluyen el id de correlacion (MDC).
+      console: ecs

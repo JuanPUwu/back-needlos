@@ -35,6 +35,8 @@ public class EstadoPrendaHistorial {
     @Column(name = "tenant_id", updatable = false, nullable = false)
     private UUID tenantId;
 
+    // EAGER a proposito: Hibernate no permite LAZY en un to-one cuyo destino
+    // tiene @SoftDelete (Prenda). El acceso inverso es puntual (no en listados).
     @ManyToOne
     @JoinColumn(name = "prenda_id", nullable = false)
     private Prenda prenda;

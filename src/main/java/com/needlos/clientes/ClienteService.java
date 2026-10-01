@@ -4,17 +4,22 @@ import com.needlos.clientes.domain.Cliente;
 import com.needlos.clientes.dto.ClienteDtos.ActualizarClienteRequest;
 import com.needlos.clientes.dto.ClienteDtos.ClienteResponse;
 import com.needlos.clientes.dto.ClienteDtos.CrearClienteRequest;
-import com.needlos.common.exception.NotFoundException;
+import com.needlos.common.exception.CodigoError;
+import com.needlos.common.exception.RecursoNoEncontradoException;
+import com.needlos.common.web.Ordenamiento;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @Transactional
 public class ClienteService {
+
+    private static final Set<String> ORDENABLES = Set.of("nombre", "apellido", "fechaRegistro");
 
     private final ClienteRepository repo;
 
@@ -32,6 +37,7 @@ public class ClienteService {
 
     @Transactional(readOnly = true)
     public Page<ClienteResponse> listar(String buscar, Pageable pageable) {
+        Ordenamiento.validar(pageable, ORDENABLES);
         Page<Cliente> pagina = (buscar == null || buscar.isBlank())
                 ? repo.findAll(pageable)
                 : repo.findByNombreContainingIgnoreCaseOrApellidoContainingIgnoreCase(buscar, buscar, pageable);
@@ -58,7 +64,8 @@ public class ClienteService {
 
     private Cliente buscar(UUID id) {
         return repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("Cliente no encontrado."));
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        CodigoError.CLIENTE_NO_ENCONTRADO, "Cliente no encontrado."));
     }
 
     private ClienteResponse toResponse(Cliente c) {

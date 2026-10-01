@@ -1,7 +1,8 @@
 package com.needlos.ordenes.domain;
 
 import com.needlos.common.domain.BaseEntity;
-import com.needlos.common.exception.BusinessException;
+import com.needlos.common.exception.CodigoError;
+import com.needlos.common.exception.ReglaNegocioException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,7 +17,6 @@ import lombok.Setter;
 import org.hibernate.annotations.SoftDelete;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +28,8 @@ import java.util.UUID;
 @SoftDelete(columnName = "eliminado")
 public class Prenda extends BaseEntity {
 
+    // EAGER a proposito: Hibernate no permite LAZY en un to-one cuyo destino
+    // tiene @SoftDelete (Orden). El acceso inverso es puntual (no en listados).
     @ManyToOne
     @JoinColumn(name = "orden_id", nullable = false)
     private Orden orden;
@@ -66,7 +68,8 @@ public class Prenda extends BaseEntity {
      */
     public void cambiarEstado(EstadoPrenda nuevo, UUID usuarioId) {
         if (estado == EstadoPrenda.ENTREGADO) {
-            throw new BusinessException("La prenda ya fue entregada y no puede cambiar de estado.");
+            throw new ReglaNegocioException(CodigoError.PRENDA_ENTREGADA,
+                    "La prenda ya fue entregada y no puede cambiar de estado.");
         }
         this.estado = nuevo;
         registrarEnHistorial(nuevo, usuarioId);

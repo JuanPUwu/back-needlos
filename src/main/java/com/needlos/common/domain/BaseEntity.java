@@ -5,6 +5,7 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.TenantId;
@@ -24,6 +25,7 @@ import java.util.UUID;
  *  · id UUID.
  *  · tenant_id gestionado por Hibernate (@TenantId): filtrado e insertado solo.
  *  · auditoria (quien y cuando creo/modifico) via Spring Data JPA Auditing.
+ *  · version para bloqueo optimista.
  *
  * El soft-delete (columna "eliminado") se declara con @SoftDelete en cada
  * entidad concreta.
@@ -57,6 +59,11 @@ public abstract class BaseEntity {
     @LastModifiedBy
     @Column(name = "actualizado_por")
     private UUID actualizadoPor;
+
+    /** Bloqueo optimista: una edicion simultanea responde 409 en vez de pisar datos. */
+    @Version
+    @Column(name = "version", nullable = false)
+    private long version;
 
     @PrePersist
     void asignarId() {

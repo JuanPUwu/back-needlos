@@ -1,0 +1,41 @@
+# ─────────────────────────────────────────────────────────────────────
+#  Perfil DEV: desarrollo local. NUNCA usar en produccion.
+#  Es el perfil por defecto (spring.profiles.default en application.yaml):
+#  IntelliJ y "mvn spring-boot:run" lo usan sin configurar nada.
+# ─────────────────────────────────────────────────────────────────────
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/needlos}
+    username: ${DB_USER:needlos}
+    password: ${DB_PASSWORD:needlos}
+
+needlos:
+  jwt:
+    # Clave SOLO para desarrollo local (produccion exige JWT_SECRET).
+    secret: ${JWT_SECRET:dev-solo-local-no-usar-en-produccion-0123456789}
+  sesion:
+    # http://localhost no es HTTPS; en produccion la cookie siempre es Secure.
+    cookie-segura: false
+  cors:
+    allowed-origins: ${FRONTEND_URLS:http://localhost:4200,https://needlos.com,http://localhost:8080}
+  recuperacion:
+    url-frontend: ${APP_URL:https://needlos.com}
+  correo:
+    cloudflare:
+      # Sin estos dos (archivo .env) la app arranca pero no envia correos.
+      account-id: ${CLOUDFLARE_ACCOUNT_ID:}
+      token: ${CLOUDFLARE_EMAIL_TOKEN:}
+  seguridad:
+    # Sin CSP en desarrollo para que funcione Swagger UI.
+    csp: ""
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+logging:
+  pattern:
+    # Incluye el id de correlacion de cada peticion.
+    level: "%5p [%X{correlationId:-}]"
