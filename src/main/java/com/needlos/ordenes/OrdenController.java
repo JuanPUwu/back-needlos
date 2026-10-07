@@ -1,14 +1,15 @@
 package com.needlos.ordenes;
 
+import com.needlos.common.web.PaginaResponse;
 import com.needlos.ordenes.dto.OrdenDtos.AnularOrdenRequest;
 import com.needlos.ordenes.dto.OrdenDtos.CambiarEstadoRequest;
 import com.needlos.ordenes.dto.OrdenDtos.CrearOrdenRequest;
 import com.needlos.ordenes.dto.OrdenDtos.OrdenResponse;
-import com.needlos.common.web.PaginaResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +21,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.UUID;
 
 @Tag(name = "Ordenes")
 @SecurityRequirement(name = "Bearer")
@@ -41,8 +40,9 @@ public class OrdenController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.crear(req));
     }
 
-    @Operation(summary = "Lista ordenes (paginado)",
-            description = "Ordenable por: numero, fecha, fechaEntrega. Maximo 100 por pagina.")
+    @Operation(
+            summary = "Lista ordenes (paginado)",
+            description = "Ordenable por: numero, fecha, fechaEntrega. Máximo 100 por página.")
     @GetMapping
     public PaginaResponse<OrdenResponse> listar(Pageable pageable) {
         return PaginaResponse.de(service.listar(pageable));
@@ -56,9 +56,10 @@ public class OrdenController {
 
     @Operation(summary = "Cambia el estado de una prenda de la orden")
     @PatchMapping("/{ordenId}/prendas/{prendaId}/estado")
-    public OrdenResponse cambiarEstado(@PathVariable UUID ordenId,
-                                       @PathVariable UUID prendaId,
-                                       @Valid @RequestBody CambiarEstadoRequest req) {
+    public OrdenResponse cambiarEstado(
+            @PathVariable UUID ordenId,
+            @PathVariable UUID prendaId,
+            @Valid @RequestBody CambiarEstadoRequest req) {
         return service.cambiarEstadoPrenda(ordenId, prendaId, req.estado());
     }
 

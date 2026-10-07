@@ -1,14 +1,13 @@
 package com.needlos.security.auth;
 
 import com.needlos.security.sesion.SesionProperties;
+import java.time.Duration;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-
 /**
- * Cookie del refresh token: HttpOnly (JavaScript no puede leerla), Secure
- * (solo HTTPS, salvo en dev), SameSite=Lax y limitada a las rutas de /api/v1/auth.
+ * Cookie del refresh token: HttpOnly (JavaScript no puede leerla), Secure (solo HTTPS, salvo en
+ * dev), SameSite=Lax y limitada a las rutas de /api/v1/auth.
  */
 @Component
 public class CookieRefresh {

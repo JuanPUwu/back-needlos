@@ -4,17 +4,16 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.Instant;
-import java.util.UUID;
-
 /**
- * Cuenta: identidad global de una persona (unica por correo). Guarda las
- * credenciales (contrasena y/o vinculo con Google) y sus datos personales.
- * NO esta atada a una sastreria: el vinculo con cada sastreria es un
- * {@link com.needlos.security.acceso.Acceso}. Una cuenta puede acceder a varias.
+ * Cuenta: identidad global de una persona (unica por correo). Guarda las credenciales (contrasena
+ * y/o vinculo con Google) y sus datos personales. NO esta atada a una sastreria: el vinculo con
+ * cada sastreria es un {@link com.needlos.security.acceso.Acceso}. Una cuenta puede acceder a
+ * varias.
  */
 @Getter
 @Setter
@@ -46,24 +45,22 @@ public class Cuenta {
     @Column(name = "numero_documento")
     private String numeroDocumento;
 
-    @Column
-    private String telefono;
+    @Column private String telefono;
 
     @Column(nullable = false)
     private boolean activo = true;
 
     /**
-     * SUPER_ADMIN del sistema (el dueno de Needlos). Es global: NO pertenece a
-     * ninguna sastreria, ve la info de todas. Se representa aqui (en la cuenta)
-     * y no como un rol de acceso.
+     * SUPER_ADMIN del sistema (el dueno de Needlos). Es global: NO pertenece a ninguna sastreria,
+     * ve la info de todas. Se representa aqui (en la cuenta) y no como un rol de acceso.
      */
     @Column(name = "super_admin", nullable = false)
     private boolean superAdmin = false;
 
     /**
-     * Correo verificado. TRUE por defecto: solo el auto-registro con correo y
-     * contrasena lo pone en FALSE (exige el codigo de 6 digitos); Google ya
-     * verifica el correo, y las demas cuentas (empleados, semillas) no lo necesitan.
+     * Correo verificado. TRUE por defecto: solo el auto-registro con correo y contrasena lo pone en
+     * FALSE (exige el codigo de 6 digitos); Google ya verifica el correo, y las demas cuentas
+     * (empleados, semillas) no lo necesitan.
      */
     @Column(nullable = false)
     private boolean verificada = true;

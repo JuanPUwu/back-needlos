@@ -4,13 +4,13 @@ import java.time.Year;
 import java.util.List;
 
 /**
- * Plantilla HTML de los correos transaccionales: una tarjeta blanca con el
- * mismo azul de marca del borde y los botones del login (`#022859`), para que
- * cualquier correo se reconozca de un vistazo como de NeedlOS.
+ * Plantilla HTML de los correos transaccionales: una tarjeta blanca con el mismo azul de marca del
+ * borde y los botones del login (`#022859`), para que cualquier correo se reconozca de un vistazo
+ * como de NeedlOS.
  *
- * Usa solo tablas y estilos en linea (los clientes de correo no soportan CSS
- * moderno de forma confiable) y una pila de fuentes del sistema: las fuentes
- * web (Inter) no cargan de forma confiable dentro de un correo.
+ * <p>Usa solo tablas y estilos en linea (los clientes de correo no soportan CSS moderno de forma
+ * confiable) y una pila de fuentes del sistema: las fuentes web (Inter) no cargan de forma
+ * confiable dentro de un correo.
  */
 public final class PlantillaCorreo {
 
@@ -24,18 +24,16 @@ public final class PlantillaCorreo {
     private static final String FUENTE =
             "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
-    private PlantillaCorreo() {
-    }
+    private PlantillaCorreo() {}
 
     /** Boton principal del correo (p. ej. "Restablecer contraseña"). */
-    public record Boton(String texto, String url) {
-    }
+    public record Boton(String texto, String url) {}
 
     /** Codigo de un solo uso mostrado en grande (p. ej. verificacion de correo). */
-    public record Codigo(String valor) {
-    }
+    public record Codigo(String valor) {}
 
-    private static final String NOTA_SEGURIDAD = "Si no fuiste tú, ignora este mensaje: no se hizo ningún cambio en tu cuenta.";
+    private static final String NOTA_SEGURIDAD =
+            "Si no fuiste tú, ignora este mensaje: no se hizo ningún cambio en tu cuenta.";
 
     /** Arma el HTML completo: titulo, parrafos (se escapan) y un boton opcional. */
     public static String html(String titulo, List<String> parrafos, Boton boton) {
@@ -47,20 +45,25 @@ public final class PlantillaCorreo {
         return base(titulo, parrafos, codigoHtml(codigo), NOTA_SEGURIDAD);
     }
 
-    /** Variante sin boton ni codigo, con una nota al pie propia (p. ej. el correo de bienvenida). */
+    /**
+     * Variante sin boton ni codigo, con una nota al pie propia (p. ej. el correo de bienvenida).
+     */
     public static String html(String titulo, List<String> parrafos, Boton boton, String notaPie) {
         return base(titulo, parrafos, boton == null ? "" : botonHtml(boton), notaPie);
     }
 
-    private static String base(String titulo, List<String> parrafos, String bloqueExtra, String notaPie) {
+    private static String base(
+            String titulo, List<String> parrafos, String bloqueExtra, String notaPie) {
         StringBuilder cuerpo = new StringBuilder();
         for (String parrafo : parrafos) {
             cuerpo.append("<p style=\"margin:0 0 16px;font-size:15px;line-height:1.5;color:")
-                    .append(TEXTO).append(";\">").append(escapar(parrafo)).append("</p>\n");
+                    .append(TEXTO)
+                    .append(";\">")
+                    .append(escapar(parrafo))
+                    .append("</p>\n");
         }
 
-        return BASE
-                .replace("{{fuente}}", FUENTE)
+        return BASE.replace("{{fuente}}", FUENTE)
                 .replace("{{fondo}}", FONDO)
                 .replace("{{bordeTarjeta}}", BORDE_TARJETA)
                 .replace("{{azul}}", AZUL)
@@ -77,8 +80,7 @@ public final class PlantillaCorreo {
 
     private static String botonHtml(Boton boton) {
         String url = escapar(boton.url());
-        return BOTON
-                .replace("{{azul}}", AZUL)
+        return BOTON.replace("{{azul}}", AZUL)
                 .replace("{{textoPie}}", TEXTO_PIE)
                 .replace("{{url}}", url)
                 .replace("{{textoBoton}}", escapar(boton.texto()));
@@ -87,23 +89,22 @@ public final class PlantillaCorreo {
     private static String codigoHtml(Codigo codigo) {
         // Sin espacios ni separadores dentro del valor: al copiarlo y pegarlo debe quedar
         // exactamente igual. La legibilidad la da el letter-spacing (solo visual).
-        return CODIGO
-                .replace("{{azul}}", AZUL)
+        return CODIGO.replace("{{azul}}", AZUL)
                 .replace("{{bordeSuave}}", BORDE_SUAVE)
                 .replace("{{codigo}}", escapar(codigo.valor()));
     }
 
     /** Escapado minimo: nombres y correos de cuentas no deben romper el marcado. */
     private static String escapar(String texto) {
-        return texto
-                .replace("&", "&amp;")
+        return texto.replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")
                 .replace("\"", "&quot;")
                 .replace("'", "&#39;");
     }
 
-    private static final String BOTON = """
+    private static final String BOTON =
+            """
             <tr><td style="padding:8px 40px 8px;" align="center">
               <a href="{{url}}" style="display:inline-block;background:{{azul}};color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:14px 32px;border-radius:14px;">{{textoBoton}}</a>
             </td></tr>
@@ -115,13 +116,15 @@ public final class PlantillaCorreo {
             </td></tr>
             """;
 
-    private static final String CODIGO = """
+    private static final String CODIGO =
+            """
             <tr><td style="padding:8px 40px 24px;" align="center">
               <div style="display:inline-block;background:#f5f5f7;border:1px solid {{bordeSuave}};border-radius:14px;padding:16px 28px;font-size:32px;font-weight:700;letter-spacing:0.08em;color:{{azul}};font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;user-select:all;-webkit-user-select:all;">{{codigo}}</div>
             </td></tr>
             """;
 
-    private static final String BASE = """
+    private static final String BASE =
+            """
             <!doctype html>
             <html lang="es">
             <head>

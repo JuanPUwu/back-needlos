@@ -13,15 +13,20 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI needlosOpenAPI() {
         return new OpenAPI()
-                .info(new Info()
-                        .title("NeedlOS API")
-                        .version("0.1.0")
-                        .description("ERP multi-tenant para sastrerias. "
-                                + "Obten un token en POST /api/v1/auth/login y pulsa Authorize."))
-                .components(new Components().addSecuritySchemes("Bearer",
-                        new SecurityScheme()
-                                .type(SecurityScheme.Type.HTTP)
-                                .scheme("bearer")
-                                .bearerFormat("JWT")));
+                .info(
+                        new Info()
+                                .title("NeedlOS API")
+                                .version("0.1.0")
+                                .description(
+                                        "ERP multi-tenant para sastrerías. "
+                                                + "Obten un token en POST /api/v1/auth/login y pulsa Authorize."))
+                .components(
+                        new Components()
+                                .addSecuritySchemes(
+                                        "Bearer",
+                                        new SecurityScheme()
+                                                .type(SecurityScheme.Type.HTTP)
+                                                .scheme("bearer")
+                                                .bearerFormat("JWT")));
     }
 }

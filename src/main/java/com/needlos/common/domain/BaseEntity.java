@@ -6,6 +6,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Version;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.TenantId;
@@ -15,20 +17,14 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.Instant;
-import java.util.UUID;
-
 /**
  * Clase base de todas las entidades de negocio (tenant-scoped).
  *
- * Aporta, sin que cada entidad lo repita:
- *  · id UUID.
- *  · tenant_id gestionado por Hibernate (@TenantId): filtrado e insertado solo.
- *  · auditoria (quien y cuando creo/modifico) via Spring Data JPA Auditing.
- *  · version para bloqueo optimista.
+ * <p>Aporta, sin que cada entidad lo repita: · id UUID. · tenant_id gestionado por Hibernate
+ * (@TenantId): filtrado e insertado solo. · auditoria (quien y cuando creo/modifico) via Spring
+ * Data JPA Auditing. · version para bloqueo optimista.
  *
- * El soft-delete (columna "eliminado") se declara con @SoftDelete en cada
- * entidad concreta.
+ * <p>El soft-delete (columna "eliminado") se declara con @SoftDelete en cada entidad concreta.
  */
 @Getter
 @Setter

@@ -8,17 +8,10 @@ import jakarta.validation.constraints.Size;
 /** DTOs de la recuperacion de contrasena. */
 public final class RecuperacionDtos {
 
-    private RecuperacionDtos() {
-    }
+    private RecuperacionDtos() {}
 
-    public record RecuperarContrasenaRequest(
-            @NotBlank @Email @Size(max = 120) String email
-    ) {
-    }
+    public record RecuperarContrasenaRequest(@NotBlank @Email @Size(max = 120) String email) {}
 
     public record RestablecerContrasenaRequest(
-            @NotBlank @Size(max = 100) String token,
-            @ContrasenaSegura String contrasenaNueva
-    ) {
-    }
+            @NotBlank @Size(max = 100) String token, @ContrasenaSegura String contrasenaNueva) {}
 }

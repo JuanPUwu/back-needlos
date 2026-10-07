@@ -8,17 +8,12 @@ import jakarta.validation.constraints.Size;
 /** DTOs de la verificacion de correo al registrarse con contrasena. */
 public final class VerificacionDtos {
 
-    private VerificacionDtos() {
-    }
+    private VerificacionDtos() {}
 
     public record VerificarCorreoRequest(
             @NotBlank @Email @Size(max = 120) String email,
-            @NotBlank @Pattern(regexp = "^[0-9]{6}$", message = "El codigo debe tener 6 digitos") String codigo
-    ) {
-    }
+            @NotBlank @Pattern(regexp = "^[0-9]{6}$", message = "El código debe tener 6 dígitos")
+                    String codigo) {}
 
-    public record ReenviarCodigoRequest(
-            @NotBlank @Email @Size(max = 120) String email
-    ) {
-    }
+    public record ReenviarCodigoRequest(@NotBlank @Email @Size(max = 120) String email) {}
 }

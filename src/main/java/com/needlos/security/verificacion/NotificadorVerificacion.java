@@ -5,12 +5,11 @@ import com.needlos.common.correo.EnviadorCorreo;
 import com.needlos.common.correo.PlantillaCorreo;
 import com.needlos.common.correo.PlantillaCorreo.Codigo;
 import com.needlos.common.correo.Remitente;
+import java.util.List;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-
-import java.util.List;
 
 /** Envia el codigo de verificacion despues del commit y fuera del hilo de la peticion. */
 @Component
@@ -25,11 +24,12 @@ public class NotificadorVerificacion {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void enviar(VerificacionCorreoSolicitada evento) {
-        String asunto = "Tu codigo para verificar tu cuenta de NeedlOS";
-        String texto = """
+        String asunto = "Tu código para verificar tu cuenta de NeedlOS";
+        String texto =
+                """
                 Hola %s:
 
-                Para activar tu cuenta de NeedlOS, escribe este codigo en la pantalla de verificacion:
+                Para activar tu cuenta de NeedlOS, escribe este código en la pantalla de verificación:
 
                 %s
 
@@ -38,13 +38,19 @@ public class NotificadorVerificacion {
                 Si no fuiste tú, ignora este mensaje.
 
                 NeedlOS
-                """.formatted(evento.nombre(), evento.codigo(), evento.minutosValidez());
+                """
+                        .formatted(evento.nombre(), evento.codigo(), evento.minutosValidez());
 
-        List<String> parrafos = List.of(
-                "Hola " + evento.nombre() + ":",
-                "Para activar tu cuenta de NeedlOS, escribe este codigo en la pantalla de verificacion. "
-                        + "Vence en " + evento.minutosValidez() + " minutos y solo sirve una vez.");
-        String html = PlantillaCorreo.htmlConCodigo("Verifica tu correo", parrafos, new Codigo(evento.codigo()));
+        List<String> parrafos =
+                List.of(
+                        "Hola " + evento.nombre() + ":",
+                        "Para activar tu cuenta de NeedlOS, escribe este código en la pantalla de verificación. "
+                                + "Vence en "
+                                + evento.minutosValidez()
+                                + " minutos y solo sirve una vez.");
+        String html =
+                PlantillaCorreo.htmlConCodigo(
+                        "Verifica tu correo", parrafos, new Codigo(evento.codigo()));
 
         enviador.enviar(new Correo(evento.email(), Remitente.BIENVENIDA, asunto, texto, html));
     }

@@ -4,18 +4,16 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.Instant;
-import java.util.UUID;
-
 /**
- * Codigo de 6 digitos para verificar el correo de una cuenta registrada con
- * contrasena (Google ya verifica el correo, no pasa por aqui). Solo se guarda
- * el hash; a diferencia de un token largo, un codigo de 6 digitos SI se puede
- * adivinar por fuerza bruta, por eso lleva su propio contador de intentos
- * fallidos (ver {@link VerificacionCorreoService}).
+ * Codigo de 6 digitos para verificar el correo de una cuenta registrada con contrasena (Google ya
+ * verifica el correo, no pasa por aqui). Solo se guarda el hash; a diferencia de un token largo, un
+ * codigo de 6 digitos SI se puede adivinar por fuerza bruta, por eso lleva su propio contador de
+ * intentos fallidos (ver {@link VerificacionCorreoService}).
  */
 @Getter
 @Setter

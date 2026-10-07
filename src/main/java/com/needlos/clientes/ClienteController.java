@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +21,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.UUID;
 
 @Tag(name = "Clientes")
 @SecurityRequirement(name = "Bearer")
@@ -41,10 +40,12 @@ public class ClienteController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.crear(req));
     }
 
-    @Operation(summary = "Lista clientes (paginado, con busqueda opcional)",
-            description = "Ordenable por: nombre, apellido, fechaRegistro. Maximo 100 por pagina.")
+    @Operation(
+            summary = "Lista clientes (paginado, con busqueda opcional)",
+            description = "Ordenable por: nombre, apellido, fechaRegistro. Máximo 100 por página.")
     @GetMapping
-    public PaginaResponse<ClienteResponse> listar(@RequestParam(required = false) String buscar, Pageable pageable) {
+    public PaginaResponse<ClienteResponse> listar(
+            @RequestParam(required = false) String buscar, Pageable pageable) {
         return PaginaResponse.de(service.listar(buscar, pageable));
     }
 
@@ -56,8 +57,8 @@ public class ClienteController {
 
     @Operation(summary = "Actualiza un cliente")
     @PutMapping("/{id}")
-    public ClienteResponse actualizar(@PathVariable UUID id,
-                                      @Valid @RequestBody ActualizarClienteRequest req) {
+    public ClienteResponse actualizar(
+            @PathVariable UUID id, @Valid @RequestBody ActualizarClienteRequest req) {
         return service.actualizar(id, req);
     }
 

@@ -7,12 +7,9 @@ import jakarta.validation.constraints.Size;
 /** DTOs de la cuenta autenticada. */
 public final class CuentaDtos {
 
-    private CuentaDtos() {
-    }
+    private CuentaDtos() {}
 
     public record CambiarContrasenaRequest(
             @NotBlank @Size(max = 72) String contrasenaActual,
-            @ContrasenaSegura String contrasenaNueva
-    ) {
-    }
+            @ContrasenaSegura String contrasenaNueva) {}
 }

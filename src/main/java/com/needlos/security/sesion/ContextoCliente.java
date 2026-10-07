@@ -4,8 +4,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 
 /**
- * Datos del dispositivo que abre o renueva una sesion. Lo construye el
- * controlador (capa HTTP) para que los servicios no dependan de la peticion.
+ * Datos del dispositivo que abre o renueva una sesion. Lo construye el controlador (capa HTTP) para
+ * que los servicios no dependan de la peticion.
  */
 public record ContextoCliente(String ip, String userAgent) {
 

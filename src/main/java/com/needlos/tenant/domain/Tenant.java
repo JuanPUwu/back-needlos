@@ -6,16 +6,15 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.Instant;
-import java.util.UUID;
-
 /**
- * Una sastreria que usa el sistema. Los tenants no se filtran por tenant.
- * El plan arranca en DEMO (auto-registro) y el SUPER_ADMIN puede otorgar una
- * licencia que lo pasa a un plan completo por un periodo.
+ * Una sastreria que usa el sistema. Los tenants no se filtran por tenant. El plan arranca en DEMO
+ * (auto-registro) y el SUPER_ADMIN puede otorgar una licencia que lo pasa a un plan completo por un
+ * periodo.
  */
 @Getter
 @Setter

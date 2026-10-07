@@ -12,14 +12,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-import org.hibernate.annotations.SoftDelete;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.SoftDelete;
 
 @Getter
 @Setter
@@ -63,12 +62,13 @@ public class Prenda extends BaseEntity {
     }
 
     /**
-     * Cambia el estado de la prenda. Una prenda ya ENTREGADA no puede cambiar.
-     * Registra el cambio en el historial.
+     * Cambia el estado de la prenda. Una prenda ya ENTREGADA no puede cambiar. Registra el cambio
+     * en el historial.
      */
     public void cambiarEstado(EstadoPrenda nuevo, UUID usuarioId) {
         if (estado == EstadoPrenda.ENTREGADO) {
-            throw new ReglaNegocioException(CodigoError.PRENDA_ENTREGADA,
+            throw new ReglaNegocioException(
+                    CodigoError.PRENDA_ENTREGADA,
                     "La prenda ya fue entregada y no puede cambiar de estado.");
         }
         this.estado = nuevo;

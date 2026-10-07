@@ -5,30 +5,28 @@ import com.needlos.common.exception.CodigoError;
 import com.needlos.common.exception.NoAutenticadoException;
 import com.needlos.common.exception.RecursoNoEncontradoException;
 import com.needlos.security.token.TokenAleatorio;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
-
 /**
  * Ciclo de vida de las sesiones: abrir, rotar el refresh token, validar y revocar.
  *
- * Seguridad:
- *  · El refresh token es aleatorio (256 bits) y solo se guarda su hash SHA-256.
- *  · Cada renovacion emite un refresh nuevo (rotacion).
- *  · Si se presenta un refresh ya rotado fuera de la ventana de gracia, se asume
- *    robo y se revocan TODAS las sesiones de la cuenta (deteccion de reuso).
+ * <p>Seguridad: · El refresh token es aleatorio (256 bits) y solo se guarda su hash SHA-256. · Cada
+ * renovacion emite un refresh nuevo (rotacion). · Si se presenta un refresh ya rotado fuera de la
+ * ventana de gracia, se asume robo y se revocan TODAS las sesiones de la cuenta (deteccion de
+ * reuso).
  */
 @Service
 public class SesionService {
 
     private static final Logger log = LoggerFactory.getLogger(SesionService.class);
-    private static final String MSG_SESION_INVALIDA = "Tu sesion expiro. Inicia sesion de nuevo.";
+    private static final String MSG_SESION_INVALIDA = "Tu sesión expiró. Inicia sesión de nuevo.";
 
     private final SesionRepository repo;
     private final SesionProperties props;
@@ -39,12 +37,10 @@ public class SesionService {
     }
 
     /** Sesion recien abierta junto al refresh token en claro (solo para la cookie). */
-    public record SesionAbierta(Sesion sesion, String refreshToken) {
-    }
+    public record SesionAbierta(Sesion sesion, String refreshToken) {}
 
     /** Resultado de renovar: refreshToken es null si no hubo rotacion (ventana de gracia). */
-    public record SesionRenovada(Sesion sesion, String refreshToken) {
-    }
+    public record SesionRenovada(Sesion sesion, String refreshToken) {}
 
     @Transactional
     public SesionAbierta abrir(UUID cuentaId, UUID tenantId, ContextoCliente cliente) {
@@ -68,8 +64,8 @@ public class SesionService {
     }
 
     /**
-     * Renueva la sesion a partir del refresh token de la cookie. No revierte la
-     * transaccion ante errores esperados: la revocacion por reuso debe quedar guardada.
+     * Renueva la sesion a partir del refresh token de la cookie. No revierte la transaccion ante
+     * errores esperados: la revocacion por reuso debe quedar guardada.
      */
     @Transactional(noRollbackFor = ApiException.class)
     public SesionRenovada renovar(String refreshToken, ContextoCliente cliente) {
@@ -100,22 +96,29 @@ public class SesionService {
     }
 
     private SesionRenovada renovarConTokenAnterior(String hashPresentado) {
-        Sesion sesion = repo.findByTokenHashAnterior(hashPresentado).orElseThrow(this::sesionInvalida);
+        Sesion sesion =
+                repo.findByTokenHashAnterior(hashPresentado).orElseThrow(this::sesionInvalida);
         if (!sesion.estaActiva()) {
             // Sesion ya cerrada o vencida: no hay nada que proteger.
             throw sesionInvalida();
         }
 
-        boolean dentroDeGracia = sesion.getRotadaEn() != null
-                && sesion.getRotadaEn().plusSeconds(props.graciaRotacionSegundos()).isAfter(Instant.now());
+        boolean dentroDeGracia =
+                sesion.getRotadaEn() != null
+                        && sesion.getRotadaEn()
+                                .plusSeconds(props.graciaRotacionSegundos())
+                                .isAfter(Instant.now());
         if (dentroDeGracia) {
             // Otra pestana ya roto el token; el navegador ya tiene la cookie nueva.
             return new SesionRenovada(sesion, null);
         }
 
         int revocadas = repo.revocarTodas(sesion.getCuentaId());
-        log.warn("Reuso de refresh token detectado en la sesion {} de la cuenta {}. Sesiones revocadas: {}",
-                sesion.getId(), sesion.getCuentaId(), revocadas);
+        log.warn(
+                "Reuso de refresh token detectado en la sesion {} de la cuenta {}. Sesiones revocadas: {}",
+                sesion.getId(),
+                sesion.getCuentaId(),
+                revocadas);
         throw sesionInvalida();
     }
 
@@ -143,18 +146,29 @@ public class SesionService {
     @Transactional(readOnly = true)
     public List<SesionActivaResponse> activas(UUID cuentaId, UUID sesionActual) {
         return repo.findActivas(cuentaId, Instant.now()).stream()
-                .map(s -> new SesionActivaResponse(s.getId(), s.getDeviceInfo(), s.getIpAddress(),
-                        s.getCreadoEn(), s.getUltimoUso(), s.getId().equals(sesionActual)))
+                .map(
+                        s ->
+                                new SesionActivaResponse(
+                                        s.getId(),
+                                        s.getDeviceInfo(),
+                                        s.getIpAddress(),
+                                        s.getCreadoEn(),
+                                        s.getUltimoUso(),
+                                        s.getId().equals(sesionActual)))
                 .toList();
     }
 
     /** Cierra una sesion propia. Una sesion de otra cuenta responde 404 (no se revela). */
     @Transactional
     public void cerrar(UUID cuentaId, UUID sesionId) {
-        Sesion sesion = repo.findById(sesionId)
-                .filter(s -> s.getCuentaId().equals(cuentaId))
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        CodigoError.SESION_NO_ENCONTRADA, "La sesion no existe."));
+        Sesion sesion =
+                repo.findById(sesionId)
+                        .filter(s -> s.getCuentaId().equals(cuentaId))
+                        .orElseThrow(
+                                () ->
+                                        new RecursoNoEncontradoException(
+                                                CodigoError.SESION_NO_ENCONTRADA,
+                                                "La sesión no existe."));
         sesion.revocar();
     }
 

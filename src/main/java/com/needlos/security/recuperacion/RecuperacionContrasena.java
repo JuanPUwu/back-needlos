@@ -4,16 +4,15 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.Instant;
-import java.util.UUID;
-
 /**
- * Enlace de recuperacion de contrasena enviado por correo. Solo se guarda el
- * hash del token; el valor en claro viaja unicamente en el enlace del correo.
- * Vence a los pocos minutos y sirve una sola vez.
+ * Enlace de recuperacion de contrasena enviado por correo. Solo se guarda el hash del token; el
+ * valor en claro viaja unicamente en el enlace del correo. Vence a los pocos minutos y sirve una
+ * sola vez.
  */
 @Getter
 @Setter

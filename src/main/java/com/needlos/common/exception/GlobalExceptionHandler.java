@@ -1,6 +1,10 @@
 package com.needlos.common.exception;
 
 import com.needlos.common.web.CorrelationIdFilter;
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -22,11 +26,6 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import java.net.URI;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Traduce toda excepcion a un unico formato: RFC 9457 (ProblemDetail) + "code".
  *
@@ -34,9 +33,8 @@ import java.util.Map;
  * { "type", "title", "status", "detail", "instance", "code", "timestamp", "correlationId" }
  * </pre>
  *
- * Los errores esperados (4xx) se registran en INFO; los inesperados (5xx) en
- * ERROR con la excepcion completa. Al cliente nunca le llegan stack traces,
- * SQL ni nombres de clases.
+ * Los errores esperados (4xx) se registran en INFO; los inesperados (5xx) en ERROR con la excepcion
+ * completa. Al cliente nunca le llegan stack traces, SQL ni nombres de clases.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -47,10 +45,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ProblemDetail> api(ApiException ex, WebRequest request) {
-        log.info("{} {} en {}: {}", ex.getStatus().value(), ex.getCodigo(), ruta(request), ex.getMessage());
+        log.info(
+                "{} {} en {}: {}",
+                ex.getStatus().value(),
+                ex.getCodigo(),
+                ruta(request),
+                ex.getMessage());
         ResponseEntity.BodyBuilder respuesta = ResponseEntity.status(ex.getStatus());
         if (ex instanceof DemasiadasSolicitudesException limite) {
-            respuesta.header(HttpHeaders.RETRY_AFTER, String.valueOf(limite.getReintentarEnSegundos()));
+            respuesta.header(
+                    HttpHeaders.RETRY_AFTER, String.valueOf(limite.getReintentarEnSegundos()));
         }
         return respuesta.body(problema(ex.getStatus(), ex.getCodigo(), ex.getMessage(), request));
     }
@@ -58,32 +62,49 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     // ── Seguridad ───────────────────────────────────────────────────
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ProblemDetail> noAutenticado(AuthenticationException ex, WebRequest request) {
-        return responder(HttpStatus.UNAUTHORIZED, CodigoError.NO_AUTENTICADO,
-                "Debes iniciar sesion para continuar.", request);
+    public ResponseEntity<ProblemDetail> noAutenticado(
+            AuthenticationException ex, WebRequest request) {
+        return responder(
+                HttpStatus.UNAUTHORIZED,
+                CodigoError.NO_AUTENTICADO,
+                "Debes iniciar sesión para continuar.",
+                request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ProblemDetail> sinPermiso(AccessDeniedException ex, WebRequest request) {
-        return responder(HttpStatus.FORBIDDEN, CodigoError.SIN_PERMISO,
-                "No tienes permisos para realizar esta accion.", request);
+        return responder(
+                HttpStatus.FORBIDDEN,
+                CodigoError.SIN_PERMISO,
+                "No tienes permisos para realizar esta acción.",
+                request);
     }
 
     // ── Persistencia ────────────────────────────────────────────────
 
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
-    public ResponseEntity<ProblemDetail> concurrencia(ObjectOptimisticLockingFailureException ex,
-                                                      WebRequest request) {
-        return responder(HttpStatus.CONFLICT, CodigoError.CONFLICTO_CONCURRENCIA,
-                "Otra persona modifico este registro al mismo tiempo. Recarga e intentalo de nuevo.", request);
+    public ResponseEntity<ProblemDetail> concurrencia(
+            ObjectOptimisticLockingFailureException ex, WebRequest request) {
+        return responder(
+                HttpStatus.CONFLICT,
+                CodigoError.CONFLICTO_CONCURRENCIA,
+                "Otra persona modifico este registro al mismo tiempo. Recarga e intentalo de nuevo.",
+                request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ProblemDetail> integridad(DataIntegrityViolationException ex, WebRequest request) {
+    public ResponseEntity<ProblemDetail> integridad(
+            DataIntegrityViolationException ex, WebRequest request) {
         // El detalle (constraint, SQL) solo va al log, nunca al cliente.
-        log.warn("Violacion de integridad en {}: {}", ruta(request), ex.getMostSpecificCause().getMessage());
-        return responder(HttpStatus.CONFLICT, CodigoError.CONFLICTO_DATOS,
-                "La operacion entra en conflicto con datos existentes.", request);
+        log.warn(
+                "Violacion de integridad en {}: {}",
+                ruta(request),
+                ex.getMostSpecificCause().getMessage());
+        return responder(
+                HttpStatus.CONFLICT,
+                CodigoError.CONFLICTO_DATOS,
+                "La operacion entra en conflicto con datos existentes.",
+                request);
     }
 
     // ── Inesperados ─────────────────────────────────────────────────
@@ -91,68 +112,82 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> inesperado(Exception ex, WebRequest request) {
         log.error("Error inesperado en {}", ruta(request), ex);
-        return responder(HttpStatus.INTERNAL_SERVER_ERROR, CodigoError.ERROR_INTERNO,
-                "Ha ocurrido un error inesperado. Si persiste, comunicate con soporte.", request);
+        return responder(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                CodigoError.ERROR_INTERNO,
+                "Ha ocurrido un error inesperado. Si persiste, comunicate con soporte.",
+                request);
     }
 
     // ── Excepciones de Spring MVC (400, 404, 405, 415...) ───────────
 
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
-                                                                  HttpHeaders headers,
-                                                                  HttpStatusCode status,
-                                                                  WebRequest request) {
-        List<Map<String, String>> errores = ex.getBindingResult().getFieldErrors().stream()
-                .map(this::errorDeCampo)
-                .toList();
-        ProblemDetail problema = problema(HttpStatus.BAD_REQUEST, CodigoError.VALIDACION,
-                "Hay datos invalidos en la solicitud.", request);
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+        List<Map<String, String>> errores =
+                ex.getBindingResult().getFieldErrors().stream().map(this::errorDeCampo).toList();
+        ProblemDetail problema =
+                problema(
+                        HttpStatus.BAD_REQUEST,
+                        CodigoError.VALIDACION,
+                        "Hay datos inválidos en la solicitud.",
+                        request);
         problema.setProperty("errores", errores);
         log.info("400 VALIDACION en {}: {}", ruta(request), errores);
         return ResponseEntity.badRequest().body(problema);
     }
 
     @Override
-    protected ResponseEntity<Object> handleExceptionInternal(Exception ex,
-                                                             @Nullable Object body,
-                                                             HttpHeaders headers,
-                                                             HttpStatusCode statusCode,
-                                                             WebRequest request) {
+    protected ResponseEntity<Object> handleExceptionInternal(
+            Exception ex,
+            @Nullable Object body,
+            HttpHeaders headers,
+            HttpStatusCode statusCode,
+            WebRequest request) {
         HttpStatus status = HttpStatus.resolve(statusCode.value());
         if (status == null) {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
         }
-        CodigoError codigo = switch (status) {
-            case NOT_FOUND -> CodigoError.RECURSO_NO_ENCONTRADO;
-            case METHOD_NOT_ALLOWED -> CodigoError.METODO_NO_PERMITIDO;
-            case UNSUPPORTED_MEDIA_TYPE, NOT_ACCEPTABLE -> CodigoError.FORMATO_NO_SOPORTADO;
-            case INTERNAL_SERVER_ERROR, SERVICE_UNAVAILABLE -> CodigoError.ERROR_INTERNO;
-            default -> CodigoError.SOLICITUD_INVALIDA;
-        };
-        String mensaje = switch (codigo) {
-            case RECURSO_NO_ENCONTRADO -> "El recurso solicitado no existe.";
-            case METODO_NO_PERMITIDO -> "Metodo HTTP no permitido para este recurso.";
-            case FORMATO_NO_SOPORTADO -> "Formato de contenido no soportado.";
-            case ERROR_INTERNO -> "Ha ocurrido un error inesperado. Si persiste, comunicate con soporte.";
-            default -> "La solicitud no es valida. Revisa los datos enviados.";
-        };
+        CodigoError codigo =
+                switch (status) {
+                    case NOT_FOUND -> CodigoError.RECURSO_NO_ENCONTRADO;
+                    case METHOD_NOT_ALLOWED -> CodigoError.METODO_NO_PERMITIDO;
+                    case UNSUPPORTED_MEDIA_TYPE, NOT_ACCEPTABLE -> CodigoError.FORMATO_NO_SOPORTADO;
+                    case INTERNAL_SERVER_ERROR, SERVICE_UNAVAILABLE -> CodigoError.ERROR_INTERNO;
+                    default -> CodigoError.SOLICITUD_INVALIDA;
+                };
+        String mensaje =
+                switch (codigo) {
+                    case RECURSO_NO_ENCONTRADO -> "El recurso solicitado no existe.";
+                    case METODO_NO_PERMITIDO -> "Metodo HTTP no permitido para este recurso.";
+                    case FORMATO_NO_SOPORTADO -> "Formato de contenido no soportado.";
+                    case ERROR_INTERNO ->
+                            "Ha ocurrido un error inesperado. Si persiste, comunicate con soporte.";
+                    default -> "La solicitud no es válida. Revisa los datos enviados.";
+                };
         if (status.is5xxServerError()) {
             log.error("Error de infraestructura en {}", ruta(request), ex);
         } else {
             log.info("{} {} en {}: {}", status.value(), codigo, ruta(request), ex.getMessage());
         }
-        return ResponseEntity.status(status).headers(headers).body(problema(status, codigo, mensaje, request));
+        return ResponseEntity.status(status)
+                .headers(headers)
+                .body(problema(status, codigo, mensaje, request));
     }
 
     // ── Construccion del ProblemDetail ──────────────────────────────
 
-    private ResponseEntity<ProblemDetail> responder(HttpStatus status, CodigoError codigo,
-                                                    String mensaje, WebRequest request) {
+    private ResponseEntity<ProblemDetail> responder(
+            HttpStatus status, CodigoError codigo, String mensaje, WebRequest request) {
         log.info("{} {} en {}", status.value(), codigo, ruta(request));
         return ResponseEntity.status(status).body(problema(status, codigo, mensaje, request));
     }
 
-    private ProblemDetail problema(HttpStatus status, CodigoError codigo, String mensaje, WebRequest request) {
+    private ProblemDetail problema(
+            HttpStatus status, CodigoError codigo, String mensaje, WebRequest request) {
         ProblemDetail problema = ProblemDetail.forStatusAndDetail(status, mensaje);
         problema.setTitle(status.getReasonPhrase());
         problema.setInstance(URI.create(ruta(request)));
@@ -166,7 +201,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private Map<String, String> errorDeCampo(FieldError fe) {
-        String mensaje = fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "Valor invalido.";
+        String mensaje =
+                fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "Valor inválido.";
         return Map.of("campo", fe.getField(), "mensaje", mensaje);
     }
 

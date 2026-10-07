@@ -16,14 +16,13 @@ import com.needlos.ordenes.dto.OrdenDtos.OrdenResponse;
 import com.needlos.ordenes.dto.OrdenDtos.PrendaRequest;
 import com.needlos.ordenes.dto.OrdenDtos.PrendaResponse;
 import com.needlos.tipoprenda.TipoPrendaRepository;
+import java.math.BigDecimal;
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.util.Set;
-import java.util.UUID;
 
 @Service
 @Transactional
@@ -31,15 +30,16 @@ public class OrdenService {
 
     private static final Set<String> ORDENABLES = Set.of("numero", "fecha", "fechaEntrega");
 
-    private final OrdenRepository      ordenRepo;
-    private final ClienteRepository    clienteRepo;
+    private final OrdenRepository ordenRepo;
+    private final ClienteRepository clienteRepo;
     private final TipoPrendaRepository tipoPrendaRepo;
     private final GeneradorConsecutivo consecutivos;
 
-    public OrdenService(OrdenRepository ordenRepo,
-                        ClienteRepository clienteRepo,
-                        TipoPrendaRepository tipoPrendaRepo,
-                        GeneradorConsecutivo consecutivos) {
+    public OrdenService(
+            OrdenRepository ordenRepo,
+            ClienteRepository clienteRepo,
+            TipoPrendaRepository tipoPrendaRepo,
+            GeneradorConsecutivo consecutivos) {
         this.ordenRepo = ordenRepo;
         this.clienteRepo = clienteRepo;
         this.tipoPrendaRepo = tipoPrendaRepo;
@@ -48,7 +48,8 @@ public class OrdenService {
 
     public OrdenResponse crear(CrearOrdenRequest req) {
         if (!clienteRepo.existsById(req.clienteId())) {
-            throw new RecursoNoEncontradoException(CodigoError.CLIENTE_NO_ENCONTRADO, "Cliente no encontrado.");
+            throw new RecursoNoEncontradoException(
+                    CodigoError.CLIENTE_NO_ENCONTRADO, "Cliente no encontrado.");
         }
 
         UUID usuarioActual = TenantContext.getUsuarioId();
@@ -60,8 +61,8 @@ public class OrdenService {
 
         for (PrendaRequest p : req.prendas()) {
             if (!tipoPrendaRepo.existsById(p.tipoPrendaId())) {
-                throw new RecursoNoEncontradoException(CodigoError.TIPO_PRENDA_NO_ENCONTRADO,
-                        "Tipo de prenda no encontrado.");
+                throw new RecursoNoEncontradoException(
+                        CodigoError.TIPO_PRENDA_NO_ENCONTRADO, "Tipo de prenda no encontrado.");
             }
             Prenda prenda = new Prenda();
             prenda.setTipoPrendaId(p.tipoPrendaId());
@@ -91,17 +92,23 @@ public class OrdenService {
     }
 
     /** Avanza el estado de una prenda concreta de la orden, con trazabilidad. */
-    public OrdenResponse cambiarEstadoPrenda(UUID ordenId, UUID prendaId, EstadoPrenda nuevoEstado) {
+    public OrdenResponse cambiarEstadoPrenda(
+            UUID ordenId, UUID prendaId, EstadoPrenda nuevoEstado) {
         Orden orden = buscar(ordenId);
         if (orden.isAnulada()) {
-            throw new ReglaNegocioException(CodigoError.PEDIDO_ANULADO,
+            throw new ReglaNegocioException(
+                    CodigoError.PEDIDO_ANULADO,
                     "No se puede cambiar el estado de un pedido anulado.");
         }
-        Prenda prenda = orden.getPrendas().stream()
-                .filter(p -> p.getId().equals(prendaId))
-                .findFirst()
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        CodigoError.PRENDA_NO_ENCONTRADA, "Prenda no encontrada en el pedido."));
+        Prenda prenda =
+                orden.getPrendas().stream()
+                        .filter(p -> p.getId().equals(prendaId))
+                        .findFirst()
+                        .orElseThrow(
+                                () ->
+                                        new RecursoNoEncontradoException(
+                                                CodigoError.PRENDA_NO_ENCONTRADA,
+                                                "Prenda no encontrada en el pedido."));
 
         prenda.cambiarEstado(nuevoEstado, TenantContext.getUsuarioId());
         return toResponse(ordenRepo.save(orden));
@@ -115,21 +122,42 @@ public class OrdenService {
     }
 
     private Orden buscar(UUID id) {
-        return ordenRepo.findWithPrendasById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        CodigoError.PEDIDO_NO_ENCONTRADO, "Pedido no encontrado."));
+        return ordenRepo
+                .findWithPrendasById(id)
+                .orElseThrow(
+                        () ->
+                                new RecursoNoEncontradoException(
+                                        CodigoError.PEDIDO_NO_ENCONTRADO, "Pedido no encontrado."));
     }
 
     private OrdenResponse toResponse(Orden o) {
-        var prendas = o.getPrendas().stream()
-                .map(p -> new PrendaResponse(
-                        p.getId(), p.getTipoPrendaId(), p.getSastreId(), p.getCantidad(),
-                        p.getDescripcion(), p.getPrecioUnitario(), p.subtotal(), p.getEstado()))
-                .toList();
+        var prendas =
+                o.getPrendas().stream()
+                        .map(
+                                p ->
+                                        new PrendaResponse(
+                                                p.getId(),
+                                                p.getTipoPrendaId(),
+                                                p.getSastreId(),
+                                                p.getCantidad(),
+                                                p.getDescripcion(),
+                                                p.getPrecioUnitario(),
+                                                p.subtotal(),
+                                                p.getEstado()))
+                        .toList();
 
         return new OrdenResponse(
-                o.getId(), o.getNumero(), o.getClienteId(), o.getFecha(), o.getFechaEntrega(),
-                o.estadoActual(), o.subtotal(), o.getDescuento(), o.total(),
-                o.isAnulada(), o.getRazonAnulacion(), prendas);
+                o.getId(),
+                o.getNumero(),
+                o.getClienteId(),
+                o.getFecha(),
+                o.getFechaEntrega(),
+                o.estadoActual(),
+                o.subtotal(),
+                o.getDescuento(),
+                o.total(),
+                o.isAnulada(),
+                o.getRazonAnulacion(),
+                prendas);
     }
 }

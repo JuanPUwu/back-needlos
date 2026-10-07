@@ -1,5 +1,13 @@
 package com.needlos.security.cuenta;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.needlos.common.correo.Correo;
 import com.needlos.common.correo.EnviadorCorreo;
 import com.needlos.common.correo.Remitente;
@@ -10,21 +18,12 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.after;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 /** Avisos de seguridad por correo (Manual F1, pregunta 47). */
 class AvisosSeguridadIntegracionTest extends IntegracionTest {
 
     private static final long ESPERA_MS = 5000;
 
-    @MockitoBean
-    private EnviadorCorreo enviador;
+    @MockitoBean private EnviadorCorreo enviador;
 
     @Test
     void alBloquearseElLogin_avisaAlDuenoUnaSolaVez() throws Exception {
@@ -57,11 +56,14 @@ class AvisosSeguridadIntegracionTest extends IntegracionTest {
         Cuenta dueno = datos.crearDueno(datos.crearSastreria());
         SesionPrueba sesion = iniciarSesion(dueno.getEmail());
 
-        mvc.perform(patch("/api/v1/cuenta/contrasena").header("Authorization", bearer(sesion.accessToken()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
+        mvc.perform(
+                        patch("/api/v1/cuenta/contrasena")
+                                .header("Authorization", bearer(sesion.accessToken()))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
                                 {"contrasenaActual": "%s", "contrasenaNueva": "NuevaClave1!"}"""
-                                .formatted(DatosPrueba.CONTRASENA)))
+                                                .formatted(DatosPrueba.CONTRASENA)))
                 .andExpect(status().isNoContent());
 
         ArgumentCaptor<Correo> captor = ArgumentCaptor.forClass(Correo.class);

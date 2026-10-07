@@ -7,6 +7,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record VerificacionProperties(
         int minutosValidez,
         int intentosMaximos,
-        int solicitudesPorHora
-) {
-}
+        int solicitudesPorHora,
+        int horasParaCambiarSastreria) {}

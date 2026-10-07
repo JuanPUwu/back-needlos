@@ -118,6 +118,7 @@ needlos:
     minutos-validez: 15                 # el codigo de 6 digitos vence y solo sirve una vez
     intentos-maximos: 5                 # codigos errados antes de invalidarlo (hay que pedir otro)
     solicitudes-por-hora: 3             # reenvios por correo, para no inundar la bandeja
+    horas-para-cambiar-sastreria: 24    # un registro sin verificar puede repetirse, pero solo cambia de sastreria pasado este tiempo
   rate-limit:
     auth-por-minuto: 10                 # login, Google, selector, registro y recuperacion (por IP)
     refresh-por-minuto: 30              # renovacion de sesion (por IP)

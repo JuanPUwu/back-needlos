@@ -1,11 +1,10 @@
 package com.needlos.common.correo;
 
 /**
- * Remitentes fijos de needlos.com (Manual F1, 2026-09-30). Cada tipo de correo
- * usa el suyo para que, con el tiempo, el usuario aprenda a reconocerlos de un
- * vistazo y cualquier intento de suplantacion se note por contraste.
- * Las tres direcciones comparten el mismo dominio verificado en Cloudflare, asi
- * que no requieren configuracion adicional por separado.
+ * Remitentes fijos de needlos.com (Manual F1, 2026-09-30). Cada tipo de correo usa el suyo para
+ * que, con el tiempo, el usuario aprenda a reconocerlos de un vistazo y cualquier intento de
+ * suplantacion se note por contraste. Las tres direcciones comparten el mismo dominio verificado en
+ * Cloudflare, asi que no requieren configuracion adicional por separado.
  */
 public enum Remitente {
 

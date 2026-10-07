@@ -10,6 +10,4 @@ public record SesionActivaResponse(
         String ip,
         Instant creadaEn,
         Instant ultimoUso,
-        boolean actual
-) {
-}
+        boolean actual) {}

@@ -26,19 +26,23 @@ public class RecuperacionContrasenaController {
         this.service = service;
     }
 
-    @Operation(summary = "Solicita un enlace para restablecer la contrasena",
-            description = "Responde siempre 202, exista o no el correo (no revela cuentas registradas).")
+    @Operation(
+            summary = "Solicita un enlace para restablecer la contraseña",
+            description =
+                    "Responde siempre 202, exista o no el correo (no revela cuentas registradas).")
     @ApiResponse(responseCode = "202", description = "Solicitud recibida")
     @ApiResponse(responseCode = "429", description = "DEMASIADAS_SOLICITUDES")
     @PostMapping("/recuperar-contrasena")
-    public ResponseEntity<Void> solicitar(@Valid @RequestBody RecuperarContrasenaRequest req,
-                                          HttpServletRequest request) {
+    public ResponseEntity<Void> solicitar(
+            @Valid @RequestBody RecuperarContrasenaRequest req, HttpServletRequest request) {
         service.solicitar(req.email(), ContextoCliente.desde(request));
         return ResponseEntity.accepted().build();
     }
 
-    @Operation(summary = "Restablece la contrasena con el token del enlace y cierra todas las sesiones")
-    @ApiResponse(responseCode = "204", description = "Contrasena cambiada")
+    @Operation(
+            summary =
+                    "Restablece la contraseña con el token del enlace y cierra todas las sesiones")
+    @ApiResponse(responseCode = "204", description = "Contraseña cambiada")
     @ApiResponse(responseCode = "400", description = "VALIDACION o ENLACE_RECUPERACION_INVALIDO")
     @PostMapping("/restablecer-contrasena")
     public ResponseEntity<Void> restablecer(@Valid @RequestBody RestablecerContrasenaRequest req) {

@@ -8,15 +8,14 @@ import com.needlos.security.rol.RolRepository;
 import com.needlos.tenant.TenantRepository;
 import com.needlos.tenant.domain.PlanTenant;
 import com.needlos.tenant.domain.Tenant;
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.boot.test.context.TestComponent;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Set;
-import java.util.UUID;
-
 /**
- * Crea datos aislados para cada prueba (correos y sastrerias unicos), de modo
- * que las pruebas no dependan unas de otras ni del orden de ejecucion.
+ * Crea datos aislados para cada prueba (correos y sastrerias unicos), de modo que las pruebas no
+ * dependan unas de otras ni del orden de ejecucion.
  */
 @TestComponent
 public class DatosPrueba {
@@ -29,8 +28,12 @@ public class DatosPrueba {
     private final RolRepository rolRepo;
     private final PasswordEncoder passwordEncoder;
 
-    public DatosPrueba(TenantRepository tenantRepo, CuentaRepository cuentaRepo, AccesoRepository accesoRepo,
-                       RolRepository rolRepo, PasswordEncoder passwordEncoder) {
+    public DatosPrueba(
+            TenantRepository tenantRepo,
+            CuentaRepository cuentaRepo,
+            AccesoRepository accesoRepo,
+            RolRepository rolRepo,
+            PasswordEncoder passwordEncoder) {
         this.tenantRepo = tenantRepo;
         this.cuentaRepo = cuentaRepo;
         this.accesoRepo = accesoRepo;

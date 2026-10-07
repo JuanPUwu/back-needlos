@@ -4,11 +4,10 @@ import com.needlos.tipoprenda.dto.TipoPrendaResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @Tag(name = "Tipos de prenda")
 @SecurityRequirement(name = "Bearer")
@@ -22,7 +21,7 @@ public class TipoPrendaController {
         this.service = service;
     }
 
-    @Operation(summary = "Lista los tipos de prenda activos del catalogo de la sastreria")
+    @Operation(summary = "Lista los tipos de prenda activos del catálogo de la sastrería")
     @GetMapping
     public List<TipoPrendaResponse> listar() {
         return service.listarActivos();

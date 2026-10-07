@@ -27,13 +27,16 @@ public class CuentaController {
         this.cuentaService = cuentaService;
     }
 
-    @Operation(summary = "Cambia mi contrasena y cierra mis otras sesiones")
-    @ApiResponse(responseCode = "204", description = "Contrasena cambiada")
-    @ApiResponse(responseCode = "400", description = "VALIDACION (politica de contrasenas)")
-    @ApiResponse(responseCode = "422", description = "CONTRASENA_ACTUAL_INCORRECTA o CUENTA_SIN_CONTRASENA")
+    @Operation(summary = "Cambia mi contraseña y cierra mis otras sesiones")
+    @ApiResponse(responseCode = "204", description = "Contraseña cambiada")
+    @ApiResponse(responseCode = "400", description = "VALIDACION (política de contraseñas)")
+    @ApiResponse(
+            responseCode = "422",
+            description = "CONTRASENA_ACTUAL_INCORRECTA o CUENTA_SIN_CONTRASENA")
     @PatchMapping("/contrasena")
-    public ResponseEntity<Void> cambiarContrasena(@AuthenticationPrincipal UsuarioAutenticado usuario,
-                                                  @Valid @RequestBody CambiarContrasenaRequest req) {
+    public ResponseEntity<Void> cambiarContrasena(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @Valid @RequestBody CambiarContrasenaRequest req) {
         cuentaService.cambiarContrasena(usuario.cuentaId(), usuario.sesionId(), req);
         return ResponseEntity.noContent().build();
     }

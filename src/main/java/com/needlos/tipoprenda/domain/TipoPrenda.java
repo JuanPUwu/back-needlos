@@ -4,16 +4,15 @@ import com.needlos.common.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.SoftDelete;
 
-import java.math.BigDecimal;
-
 /**
- * Tipo de prenda del catalogo de una sastreria (Camisa, Pantalon...). Es
- * configurable por tenant: cada sastreria define su propia lista con un precio
- * base de referencia. El precio real de cada prenda se fija en la orden.
+ * Tipo de prenda del catalogo de una sastreria (Camisa, Pantalon...). Es configurable por tenant:
+ * cada sastreria define su propia lista con un precio base de referencia. El precio real de cada
+ * prenda se fija en la orden.
  */
 @Getter
 @Setter

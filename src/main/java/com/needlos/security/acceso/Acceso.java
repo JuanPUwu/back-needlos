@@ -9,19 +9,17 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
- * Acceso: vincula una {@link com.needlos.security.cuenta.Cuenta} con una
- * sastreria (tenant) y define sus roles ahi. Una cuenta puede tener varios
- * accesos (varias sastrerias). No usa @TenantId porque se consulta durante el
- * login, antes de que exista contexto de tenant.
+ * Acceso: vincula una {@link com.needlos.security.cuenta.Cuenta} con una sastreria (tenant) y
+ * define sus roles ahi. Una cuenta puede tener varios accesos (varias sastrerias). No usa @TenantId
+ * porque se consulta durante el login, antes de que exista contexto de tenant.
  */
 @Getter
 @Setter

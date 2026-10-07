@@ -3,9 +3,9 @@ package com.needlos.common.exception;
 import org.springframework.http.HttpStatus;
 
 /**
- * Base de las excepciones esperadas de la aplicacion. Cada subclase fija el
- * status HTTP; el {@link CodigoError} identifica el caso concreto. El mensaje
- * se muestra tal cual al usuario final: debe ser claro y sin datos tecnicos.
+ * Base de las excepciones esperadas de la aplicacion. Cada subclase fija el status HTTP; el {@link
+ * CodigoError} identifica el caso concreto. El mensaje se muestra tal cual al usuario final: debe
+ * ser claro y sin datos tecnicos.
  */
 public abstract class ApiException extends RuntimeException {
 

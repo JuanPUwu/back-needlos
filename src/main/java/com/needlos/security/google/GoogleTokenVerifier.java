@@ -7,18 +7,17 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.needlos.common.exception.CodigoError;
 import com.needlos.common.exception.NoAutenticadoException;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.util.Collections;
-
 /**
- * Verifica el ID token que emite Google al iniciar sesion con Google.
- * Comprueba firma, expiracion y que la audiencia (aud) sea nuestro Client ID.
+ * Verifica el ID token que emite Google al iniciar sesion con Google. Comprueba firma, expiracion y
+ * que la audiencia (aud) sea nuestro Client ID.
  */
 @Service
 public class GoogleTokenVerifier {
@@ -28,10 +27,11 @@ public class GoogleTokenVerifier {
     private final GoogleIdTokenVerifier verifier;
 
     public GoogleTokenVerifier(@Value("${needlos.google.client-id}") String clientId) {
-        this.verifier = new GoogleIdTokenVerifier.Builder(
-                new NetHttpTransport(), GsonFactory.getDefaultInstance())
-                .setAudience(Collections.singletonList(clientId))
-                .build();
+        this.verifier =
+                new GoogleIdTokenVerifier.Builder(
+                                new NetHttpTransport(), GsonFactory.getDefaultInstance())
+                        .setAudience(Collections.singletonList(clientId))
+                        .build();
     }
 
     public UsuarioGoogle verificar(String idTokenString) {
@@ -52,8 +52,8 @@ public class GoogleTokenVerifier {
 
         Payload payload = idToken.getPayload();
         if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
-            throw new NoAutenticadoException(CodigoError.CREDENCIALES_INVALIDAS,
-                    "Tu correo de Google no esta verificado.");
+            throw new NoAutenticadoException(
+                    CodigoError.CREDENCIALES_INVALIDAS, "Tu correo de Google no esta verificado.");
         }
 
         return new UsuarioGoogle(
@@ -64,11 +64,11 @@ public class GoogleTokenVerifier {
     }
 
     private NoAutenticadoException invalido() {
-        return new NoAutenticadoException(CodigoError.CREDENCIALES_INVALIDAS,
+        return new NoAutenticadoException(
+                CodigoError.CREDENCIALES_INVALIDAS,
                 "No se pudo verificar tu cuenta de Google. Intentalo de nuevo.");
     }
 
     /** Datos de la persona extraidos del ID token de Google. */
-    public record UsuarioGoogle(String sub, String email, String nombre, String apellido) {
-    }
+    public record UsuarioGoogle(String sub, String email, String nombre, String apellido) {}
 }

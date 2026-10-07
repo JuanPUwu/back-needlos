@@ -7,6 +7,5 @@ import org.junit.jupiter.api.Test;
 class NeedlosBackendApplicationTests extends IntegracionTest {
 
     @Test
-    void contextLoads() {
-    }
+    void contextLoads() {}
 }

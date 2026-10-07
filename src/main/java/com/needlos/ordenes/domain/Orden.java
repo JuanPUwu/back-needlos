@@ -8,25 +8,23 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-import org.hibernate.annotations.SoftDelete;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.SoftDelete;
 
 /**
  * Orden de trabajo de un cliente. Agrupa una o mas prendas.
  *
- *  · numero: consecutivo por sastreria (se muestra como #<numero>).
- *  · total: calculado (suma de prendas menos descuento), nunca un campo suelto
- *    que se pueda desincronizar.
- *  · estado: derivado del estado de las prendas (ver {@link #estadoActual()}).
- *  · anulacion: solo el SASTRE_ADMIN, y siempre con razon.
+ * <p>· numero: consecutivo por sastreria (se muestra como #<numero>). · total: calculado (suma de
+ * prendas menos descuento), nunca un campo suelto que se pueda desincronizar. · estado: derivado
+ * del estado de las prendas (ver {@link #estadoActual()}). · anulacion: solo el SASTRE_ADMIN, y
+ * siempre con razon.
  */
 @Getter
 @Setter
@@ -67,9 +65,7 @@ public class Orden extends BaseEntity {
 
     /** Suma de subtotales de las prendas (antes de descuento). */
     public BigDecimal subtotal() {
-        return prendas.stream()
-                .map(Prenda::subtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return prendas.stream().map(Prenda::subtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     /** Total a cobrar: subtotal menos descuento (nunca negativo). */
@@ -90,13 +86,18 @@ public class Orden extends BaseEntity {
                 .orElse(OrdenEstado.EN_PROCESO);
     }
 
-    /** Anula la orden. Exige una razon. Solo debe invocarse desde el servicio con permiso SASTRE_ADMIN. */
+    /**
+     * Anula la orden. Exige una razon. Solo debe invocarse desde el servicio con permiso
+     * SASTRE_ADMIN.
+     */
     public void anular(String razon) {
         if (anulada) {
-            throw new ReglaNegocioException(CodigoError.PEDIDO_YA_ANULADO, "El pedido ya esta anulado.");
+            throw new ReglaNegocioException(
+                    CodigoError.PEDIDO_YA_ANULADO, "El pedido ya esta anulado.");
         }
         if (razon == null || razon.isBlank()) {
-            throw new ReglaNegocioException(CodigoError.VALIDACION, "Debe indicar la razon de la anulacion.");
+            throw new ReglaNegocioException(
+                    CodigoError.VALIDACION, "Debe indicar la razon de la anulacion.");
         }
         this.anulada = true;
         this.razonAnulacion = razon.trim();

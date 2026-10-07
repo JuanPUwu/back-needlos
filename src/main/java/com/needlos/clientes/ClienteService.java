@@ -7,13 +7,12 @@ import com.needlos.clientes.dto.ClienteDtos.CrearClienteRequest;
 import com.needlos.common.exception.CodigoError;
 import com.needlos.common.exception.RecursoNoEncontradoException;
 import com.needlos.common.web.Ordenamiento;
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Set;
-import java.util.UUID;
 
 @Service
 @Transactional
@@ -38,9 +37,11 @@ public class ClienteService {
     @Transactional(readOnly = true)
     public Page<ClienteResponse> listar(String buscar, Pageable pageable) {
         Ordenamiento.validar(pageable, ORDENABLES);
-        Page<Cliente> pagina = (buscar == null || buscar.isBlank())
-                ? repo.findAll(pageable)
-                : repo.findByNombreContainingIgnoreCaseOrApellidoContainingIgnoreCase(buscar, buscar, pageable);
+        Page<Cliente> pagina =
+                (buscar == null || buscar.isBlank())
+                        ? repo.findAll(pageable)
+                        : repo.findByNombreContainingIgnoreCaseOrApellidoContainingIgnoreCase(
+                                buscar, buscar, pageable);
         return pagina.map(this::toResponse);
     }
 
@@ -64,8 +65,11 @@ public class ClienteService {
 
     private Cliente buscar(UUID id) {
         return repo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException(
-                        CodigoError.CLIENTE_NO_ENCONTRADO, "Cliente no encontrado."));
+                .orElseThrow(
+                        () ->
+                                new RecursoNoEncontradoException(
+                                        CodigoError.CLIENTE_NO_ENCONTRADO,
+                                        "Cliente no encontrado."));
     }
 
     private ClienteResponse toResponse(Cliente c) {

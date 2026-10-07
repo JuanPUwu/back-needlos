@@ -1,19 +1,18 @@
 package com.needlos.tenant;
 
-import org.springframework.stereotype.Component;
-
 import java.text.Normalizer;
 import java.util.Locale;
 import java.util.UUID;
+import org.springframework.stereotype.Component;
 
 /**
- * Genera el identificador interno (slug) de una sastreria a partir de su nombre.
- * El usuario solo escribe el nombre; el slug no se pide ni se edita.
+ * Genera el identificador interno (slug) de una sastreria a partir de su nombre. El usuario solo
+ * escribe el nombre; el slug no se pide ni se edita.
  *
- *   "Sastrería Ñandú & Hijos" -> "sastreria-nandu-hijos"
+ * <p>"Sastrería Ñandú & Hijos" -> "sastreria-nandu-hijos"
  *
- * Si ya existe, agrega un sufijo aleatorio corto. La restriccion UNIQUE de la BD
- * cubre el caso improbable de dos registros simultaneos con el mismo nombre.
+ * <p>Si ya existe, agrega un sufijo aleatorio corto. La restriccion UNIQUE de la BD cubre el caso
+ * improbable de dos registros simultaneos con el mismo nombre.
  */
 @Component
 public class GeneradorSlug {
@@ -43,10 +42,13 @@ public class GeneradorSlug {
     }
 
     static String normalizar(String nombre) {
-        String sinTildes = Normalizer.normalize(nombre, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
-        String slug = sinTildes.toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("(^-+|-+$)", "");
+        String sinTildes =
+                Normalizer.normalize(nombre, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        String slug =
+                sinTildes
+                        .toLowerCase(Locale.ROOT)
+                        .replaceAll("[^a-z0-9]+", "-")
+                        .replaceAll("(^-+|-+$)", "");
         if (slug.length() > MAX_BASE) {
             slug = slug.substring(0, MAX_BASE).replaceAll("-+$", "");
         }

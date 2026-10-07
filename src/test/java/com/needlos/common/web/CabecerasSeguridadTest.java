@@ -1,12 +1,12 @@
 package com.needlos.common.web;
 
-import com.needlos.soporte.IntegracionTest;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.needlos.soporte.IntegracionTest;
+import org.junit.jupiter.api.Test;
 
 /** Reglas §8.3 (cabeceras de seguridad) y §13 (id de correlacion). */
 class CabecerasSeguridadTest extends IntegracionTest {
@@ -18,8 +18,14 @@ class CabecerasSeguridadTest extends IntegracionTest {
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
                 .andExpect(header().string("X-Frame-Options", "DENY"))
                 .andExpect(header().string("Referrer-Policy", "no-referrer"))
-                .andExpect(header().string("Content-Security-Policy", containsString("default-src 'none'")))
-                .andExpect(header().string("Strict-Transport-Security", containsString("max-age=31536000")))
+                .andExpect(
+                        header().string(
+                                        "Content-Security-Policy",
+                                        containsString("default-src 'none'")))
+                .andExpect(
+                        header().string(
+                                        "Strict-Transport-Security",
+                                        containsString("max-age=31536000")))
                 .andExpect(header().exists(CorrelationIdFilter.CABECERA));
     }
 

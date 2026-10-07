@@ -4,17 +4,16 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.Instant;
-import java.util.UUID;
-
 /**
- * Sesion de un dispositivo/navegador. Su id es el "sid" que viaja dentro del
- * access token, lo que permite revocar la sesion en el servidor (logout, cerrar
- * en otros dispositivos) de forma inmediata. El refresh token se guarda HASHEADO
- * (nunca en claro); el valor en claro solo vive en la cookie HttpOnly del cliente.
+ * Sesion de un dispositivo/navegador. Su id es el "sid" que viaja dentro del access token, lo que
+ * permite revocar la sesion en el servidor (logout, cerrar en otros dispositivos) de forma
+ * inmediata. El refresh token se guarda HASHEADO (nunca en claro); el valor en claro solo vive en
+ * la cookie HttpOnly del cliente.
  */
 @Getter
 @Setter

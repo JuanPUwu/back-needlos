@@ -1,22 +1,5 @@
 package com.needlos.security.auth;
 
-import com.jayway.jsonpath.JsonPath;
-import com.needlos.security.acceso.Acceso;
-import com.needlos.security.acceso.AccesoRepository;
-import com.needlos.security.cuenta.Cuenta;
-import com.needlos.security.cuenta.CuentaRepository;
-import com.needlos.soporte.DatosPrueba;
-import com.needlos.soporte.IntegracionTest;
-import com.needlos.tenant.TenantRepository;
-import com.needlos.tenant.domain.Tenant;
-import jakarta.servlet.http.Cookie;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MvcResult;
-
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -27,30 +10,45 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
+import com.needlos.security.acceso.Acceso;
+import com.needlos.security.acceso.AccesoRepository;
+import com.needlos.security.cuenta.Cuenta;
+import com.needlos.security.cuenta.CuentaRepository;
+import com.needlos.soporte.DatosPrueba;
+import com.needlos.soporte.IntegracionTest;
+import com.needlos.tenant.TenantRepository;
+import com.needlos.tenant.domain.Tenant;
+import jakarta.servlet.http.Cookie;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MvcResult;
+
 class AuthIntegracionTest extends IntegracionTest {
 
-    @Autowired
-    private CuentaRepository cuentaRepo;
-    @Autowired
-    private AccesoRepository accesoRepo;
-    @Autowired
-    private TenantRepository tenantRepo;
+    @Autowired private CuentaRepository cuentaRepo;
+    @Autowired private AccesoRepository accesoRepo;
+    @Autowired private TenantRepository tenantRepo;
 
     @Test
-    void loginConUnaSastreria_entregaAccessTokenEnCuerpoYRefreshSoloEnCookieHttpOnly() throws Exception {
+    void loginConUnaSastreria_entregaAccessTokenEnCuerpoYRefreshSoloEnCookieHttpOnly()
+            throws Exception {
         UUID tenant = datos.crearSastreria();
         Cuenta dueno = datos.crearDueno(tenant);
 
-        MvcResult resultado = login(dueno.getEmail(), DatosPrueba.CONTRASENA)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.requiereSeleccion").value(false))
-                .andExpect(jsonPath("$.sesion.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.sesion.refreshToken").doesNotExist())
-                .andExpect(jsonPath("$.sesion.roles[0]").value("SASTRE_ADMIN"))
-                .andExpect(jsonPath("$.sesion.sastreria.tenantId").value(tenant.toString()))
-                .andExpect(jsonPath("$.sesion.cuenta.email").value(dueno.getEmail()))
-                .andExpect(header().string("Set-Cookie", containsString("SameSite=Lax")))
-                .andReturn();
+        MvcResult resultado =
+                login(dueno.getEmail(), DatosPrueba.CONTRASENA)
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.requiereSeleccion").value(false))
+                        .andExpect(jsonPath("$.sesion.accessToken").isNotEmpty())
+                        .andExpect(jsonPath("$.sesion.refreshToken").doesNotExist())
+                        .andExpect(jsonPath("$.sesion.roles[0]").value("SASTRE_ADMIN"))
+                        .andExpect(jsonPath("$.sesion.sastreria.tenantId").value(tenant.toString()))
+                        .andExpect(jsonPath("$.sesion.cuenta.email").value(dueno.getEmail()))
+                        .andExpect(header().string("Set-Cookie", containsString("SameSite=Lax")))
+                        .andReturn();
 
         Cookie cookie = resultado.getResponse().getCookie(CookieRefresh.NOMBRE);
         assertThat(cookie).isNotNull();
@@ -110,26 +108,35 @@ class AuthIntegracionTest extends IntegracionTest {
         datos.darAcceso(sastre, tenantA, "SASTRE");
         datos.darAcceso(sastre, tenantB, "SASTRE");
 
-        String body = login(sastre.getEmail(), DatosPrueba.CONTRASENA)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.requiereSeleccion").value(true))
-                .andExpect(jsonPath("$.sastrerias", hasSize(2)))
-                .andExpect(jsonPath("$.sesion").doesNotExist())
-                .andExpect(header().doesNotExist("Set-Cookie"))
-                .andReturn().getResponse().getContentAsString();
+        String body =
+                login(sastre.getEmail(), DatosPrueba.CONTRASENA)
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.requiereSeleccion").value(true))
+                        .andExpect(jsonPath("$.sastrerias", hasSize(2)))
+                        .andExpect(jsonPath("$.sesion").doesNotExist())
+                        .andExpect(header().doesNotExist("Set-Cookie"))
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
         String preauth = JsonPath.read(body, "$.preauthToken");
 
-        mvc.perform(post("/api/v1/auth/seleccionar-sastreria")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"preauthToken": "%s", "tenantId": "%s"}""".formatted(preauth, ajena)))
+        mvc.perform(
+                        post("/api/v1/auth/seleccionar-sastreria")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
+                                {"preauthToken": "%s", "tenantId": "%s"}"""
+                                                .formatted(preauth, ajena)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("SIN_ACCESO_SASTRERIA"));
 
-        mvc.perform(post("/api/v1/auth/seleccionar-sastreria")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"preauthToken": "%s", "tenantId": "%s"}""".formatted(preauth, tenantB)))
+        mvc.perform(
+                        post("/api/v1/auth/seleccionar-sastreria")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
+                                {"preauthToken": "%s", "tenantId": "%s"}"""
+                                                .formatted(preauth, tenantB)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sastreria.tenantId").value(tenantB.toString()))
                 .andExpect(header().string("Set-Cookie", containsString(CookieRefresh.NOMBRE)));
@@ -140,7 +147,11 @@ class AuthIntegracionTest extends IntegracionTest {
         Cuenta sastre = datos.crearCuenta();
         datos.darAcceso(sastre, datos.crearSastreria(), "SASTRE");
         datos.darAcceso(sastre, datos.crearSastreria(), "SASTRE");
-        String body = login(sastre.getEmail(), DatosPrueba.CONTRASENA).andReturn().getResponse().getContentAsString();
+        String body =
+                login(sastre.getEmail(), DatosPrueba.CONTRASENA)
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
         String preauth = JsonPath.read(body, "$.preauthToken");
 
         mvc.perform(get("/api/v1/clientes").header("Authorization", bearer(preauth)))
@@ -169,7 +180,10 @@ class AuthIntegracionTest extends IntegracionTest {
 
     @Test
     void cuerpoIlegible_responde400SinDetallesTecnicos() throws Exception {
-        mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content("{no es json"))
+        mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{no es json"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("SOLICITUD_INVALIDA"));
     }
@@ -192,11 +206,15 @@ class AuthIntegracionTest extends IntegracionTest {
     }
 
     @Test
-    void registroDeSastreria_soloPideElNombreYGeneraElIdentificadorYQuedaSinVerificar() throws Exception {
+    void registroDeSastreria_soloPideElNombreYGeneraElIdentificadorYQuedaSinVerificar()
+            throws Exception {
         String email = "dueno-" + UUID.randomUUID() + "@prueba.com";
         String cuerpo = registro("Sastrería Ñandú & Hijos", email);
 
-        mvc.perform(post("/api/v1/auth/registrar-sastreria").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+        mvc.perform(
+                        post("/api/v1/auth/registrar-sastreria")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(cuerpo))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.email").value(email))
                 .andExpect(header().doesNotExist("Set-Cookie"));
@@ -210,7 +228,12 @@ class AuthIntegracionTest extends IntegracionTest {
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("CUENTA_SIN_VERIFICAR"));
 
-        mvc.perform(post("/api/v1/auth/registrar-sastreria").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+        // Un correo que YA esta verificado no se puede volver a registrar.
+        Cuenta verificada = datos.crearDueno(datos.crearSastreria());
+        mvc.perform(
+                        post("/api/v1/auth/registrar-sastreria")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(registro("Otra Sastreria", verificada.getEmail())))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CORREO_EN_USO"));
     }
@@ -221,11 +244,15 @@ class AuthIntegracionTest extends IntegracionTest {
         String emailA = "a-" + UUID.randomUUID() + "@prueba.com";
         String emailB = "b-" + UUID.randomUUID() + "@prueba.com";
 
-        mvc.perform(post("/api/v1/auth/registrar-sastreria").contentType(MediaType.APPLICATION_JSON)
-                        .content(registro(nombre, emailA)))
+        mvc.perform(
+                        post("/api/v1/auth/registrar-sastreria")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(registro(nombre, emailA)))
                 .andExpect(status().isCreated());
-        mvc.perform(post("/api/v1/auth/registrar-sastreria").contentType(MediaType.APPLICATION_JSON)
-                        .content(registro(nombre, emailB)))
+        mvc.perform(
+                        post("/api/v1/auth/registrar-sastreria")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(registro(nombre, emailB)))
                 .andExpect(status().isCreated());
 
         String slugA = tenantDe(emailA).getSlug();
@@ -285,7 +312,11 @@ class AuthIntegracionTest extends IntegracionTest {
 
     @Test
     void registroConContrasenaDebil_responde400() throws Exception {
-        mvc.perform(post("/api/v1/auth/registrar-sastreria").contentType(MediaType.APPLICATION_JSON).content("""
+        mvc.perform(
+                        post("/api/v1/auth/registrar-sastreria")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
                         {"nombreSastreria": "X", "nombreAdmin": "Ana", "apellidoAdmin": "Perez",
                          "numeroDocumento": "1", "email": "debil@prueba.com", "password": "12345678"}
                         """))
@@ -297,6 +328,7 @@ class AuthIntegracionTest extends IntegracionTest {
         return """
                 {"nombreSastreria": "%s", "nombreAdmin": "Ana", "apellidoAdmin": "Perez",
                  "numeroDocumento": "123", "email": "%s", "password": "Clave123!"}
-                """.formatted(nombreSastreria, email);
+                """
+                .formatted(nombreSastreria, email);
     }
 }

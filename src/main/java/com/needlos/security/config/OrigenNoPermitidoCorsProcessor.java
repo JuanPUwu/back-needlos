@@ -2,6 +2,10 @@ package com.needlos.security.config;
 
 import com.needlos.common.exception.CodigoError;
 import com.needlos.common.web.CorrelationIdFilter;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -9,17 +13,11 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.cors.DefaultCorsProcessor;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 /**
- * Cuando el navegador envia un Origin no permitido, Spring rechaza la peticion
- * aqui mismo (antes de llegar a cualquier controlador o al GlobalExceptionHandler)
- * y por defecto responde con texto plano ("Invalid CORS request"). Esta clase lo
- * sustituye por el mismo formato RFC 9457 + code que usa el resto de la API
- * (Reglas §6: un unico formato de error, siempre).
+ * Cuando el navegador envia un Origin no permitido, Spring rechaza la peticion aqui mismo (antes de
+ * llegar a cualquier controlador o al GlobalExceptionHandler) y por defecto responde con texto
+ * plano ("Invalid CORS request"). Esta clase lo sustituye por el mismo formato RFC 9457 + code que
+ * usa el resto de la API (Reglas §6: un unico formato de error, siempre).
  */
 class OrigenNoPermitidoCorsProcessor extends DefaultCorsProcessor {
 

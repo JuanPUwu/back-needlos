@@ -1,15 +1,15 @@
 package com.needlos.security.filtro;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.needlos.soporte.IntegracionTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.ResultActions;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @TestPropertySource(properties = "needlos.rate-limit.auth-por-minuto=3")
 class RateLimitIntegracionTest extends IntegracionTest {
@@ -30,13 +30,16 @@ class RateLimitIntegracionTest extends IntegracionTest {
     }
 
     private ResultActions intentarLogin(String ip) throws Exception {
-        return mvc.perform(post("/api/v1/auth/login")
-                .with(request -> {
-                    request.setRemoteAddr(ip);
-                    return request;
-                })
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
+        return mvc.perform(
+                post("/api/v1/auth/login")
+                        .with(
+                                request -> {
+                                    request.setRemoteAddr(ip);
+                                    return request;
+                                })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(
+                                """
                         {"email": "nadie@prueba.com", "password": "Clave123!"}"""));
     }
 }

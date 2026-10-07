@@ -1,9 +1,9 @@
 package com.needlos.common.exception;
 
 /**
- * Catalogo unico de codigos de error de la API (campo "code" del ProblemDetail).
- * El frontend decide comportamientos por este codigo, nunca por el texto.
- * Un codigo publicado no se renombra: el cliente movil futuro dependera de el.
+ * Catalogo unico de codigos de error de la API (campo "code" del ProblemDetail). El frontend decide
+ * comportamientos por este codigo, nunca por el texto. Un codigo publicado no se renombra: el
+ * cliente movil futuro dependera de el.
  */
 public enum CodigoError {
 

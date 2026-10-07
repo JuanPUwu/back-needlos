@@ -9,17 +9,15 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.TenantId;
 
-import java.time.Instant;
-import java.util.UUID;
-
 /**
- * Registro inmutable de cada cambio de estado de una prenda. Da trazabilidad:
- * quien cambio el estado, cuando y a que. Alimenta informes de productividad y
- * tiempos de entrega.
+ * Registro inmutable de cada cambio de estado de una prenda. Da trazabilidad: quien cambio el
+ * estado, cuando y a que. Alimenta informes de productividad y tiempos de entrega.
  */
 @Getter
 @Setter

@@ -1,20 +1,22 @@
 package com.needlos.tenant;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class GeneradorSlugTest {
 
     @ParameterizedTest
-    @CsvSource(delimiter = '|', value = {
-            "Sastrería Ñandú & Hijos   | sastreria-nandu-hijos",
-            "  El Buen Corte  | el-buen-corte",
-            "Confecciones #1 (Centro) | confecciones-1-centro",
-            "AB               | sastreria-ab",
-            "¡¡¡              | sastreria"
-    })
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "Sastrería Ñandú & Hijos   | sastreria-nandu-hijos",
+                "  El Buen Corte  | el-buen-corte",
+                "Confecciones #1 (Centro) | confecciones-1-centro",
+                "AB               | sastreria-ab",
+                "¡¡¡              | sastreria"
+            })
     void normaliza_elNombreAUnIdentificadorLegible(String nombre, String esperado) {
         assertThat(GeneradorSlug.normalizar(nombre)).isEqualTo(esperado);
     }

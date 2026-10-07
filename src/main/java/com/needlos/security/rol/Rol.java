@@ -4,10 +4,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.UUID;
 
 /** Rol de un acceso (SASTRE, SASTRE_ADMIN). SUPER_ADMIN vive en la Cuenta, no aqui. */
 @Getter

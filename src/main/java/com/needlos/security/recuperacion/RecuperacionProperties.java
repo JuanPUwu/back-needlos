@@ -6,8 +6,4 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "needlos.recuperacion")
 public record RecuperacionProperties(
         /* Base publica del frontend para armar el enlace, p. ej. https://needlos.com */
-        String urlFrontend,
-        int minutosValidez,
-        int solicitudesPorHora
-) {
-}
+        String urlFrontend, int minutosValidez, int solicitudesPorHora) {}
