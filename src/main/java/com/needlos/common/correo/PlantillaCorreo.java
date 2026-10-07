@@ -54,12 +54,18 @@ public final class PlantillaCorreo {
 
     private static String base(
             String titulo, List<String> parrafos, String bloqueExtra, String notaPie) {
+        // Ritmo vertical: 16px entre parrafos; el ultimo sin margen inferior para que el
+        // espacio hasta el bloque siguiente lo de solo el padding superior de su fila (24px),
+        // sin que los margenes se apilen.
         StringBuilder cuerpo = new StringBuilder();
-        for (String parrafo : parrafos) {
-            cuerpo.append("<p style=\"margin:0 0 16px;font-size:15px;line-height:1.5;color:")
+        for (int i = 0; i < parrafos.size(); i++) {
+            String margen = i == parrafos.size() - 1 ? "0" : "0 0 16px";
+            cuerpo.append("<p style=\"margin:")
+                    .append(margen)
+                    .append(";font-size:15px;line-height:1.5;color:")
                     .append(TEXTO)
                     .append(";\">")
-                    .append(escapar(parrafo))
+                    .append(escapar(parrafos.get(i)))
                     .append("</p>\n");
         }
 
@@ -105,10 +111,10 @@ public final class PlantillaCorreo {
 
     private static final String BOTON =
             """
-            <tr><td style="padding:8px 40px 8px;" align="center">
+            <tr><td style="padding:24px 40px 0;" align="center">
               <a href="{{url}}" style="display:inline-block;background:{{azul}};color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:14px 32px;border-radius:14px;">{{textoBoton}}</a>
             </td></tr>
-            <tr><td style="padding:0 40px 16px;">
+            <tr><td style="padding:8px 40px 0;">
               <p style="margin:0;font-size:12px;color:{{textoPie}};word-break:break-all;">
                 Si el boton no funciona, copia y pega este enlace en tu navegador:<br>
                 <a href="{{url}}" style="color:{{azul}};">{{url}}</a>
@@ -118,7 +124,7 @@ public final class PlantillaCorreo {
 
     private static final String CODIGO =
             """
-            <tr><td style="padding:8px 40px 24px;" align="center">
+            <tr><td style="padding:24px 40px 0;" align="center">
               <div style="display:inline-block;background:#f5f5f7;border:1px solid {{bordeSuave}};border-radius:14px;padding:16px 28px;font-size:32px;font-weight:700;letter-spacing:0.08em;color:{{azul}};font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;user-select:all;-webkit-user-select:all;">{{codigo}}</div>
             </td></tr>
             """;
@@ -140,12 +146,12 @@ public final class PlantillaCorreo {
                       <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:{{textoSuave}};margin-top:4px;">Tailor Software</div>
                     </td></tr>
                     <tr><td style="padding:0 40px;"><div style="border-top:1px solid {{bordeSuave}};line-height:0;">&nbsp;</div></td></tr>
-                    <tr><td style="padding:32px 40px 8px;">
+                    <tr><td style="padding:32px 40px 0;">
                       <h1 style="margin:0 0 16px;font-size:20px;font-weight:700;color:{{texto}};letter-spacing:-0.01em;">{{titulo}}</h1>
                       {{parrafos}}
                     </td></tr>
                     {{extra}}
-                    <tr><td style="padding:8px 40px 40px;">
+                    <tr><td style="padding:24px 40px 40px;">
                       <p style="margin:0;font-size:13px;color:{{textoSuave}};">{{notaPie}}</p>
                     </td></tr>
                   </table>

@@ -28,8 +28,8 @@ import org.springframework.stereotype.Component;
  * Se ejecuta una vez (si ya existen, no hace nada).
  *
  * <p>· Sastrerias: SastreriaPablo y SastreriaAngely, con un catalogo basico. · pablys8@gmail.com ->
- * SUPER_ADMIN (solo Google, sin contrasena). · admin@example.com -> SASTRE_ADMIN de ambas
- * sastrerias. · sastre@example.com -> SASTRE en ambas sastrerias.
+ * SUPER_ADMIN (entra con Google o con la contrasena "Admin123@"). · admin@example.com ->
+ * SASTRE_ADMIN de ambas sastrerias. · sastre@example.com -> SASTRE en ambas sastrerias.
  */
 @Component
 @Profile("dev")
@@ -42,6 +42,8 @@ public class DatosPruebaInitializer implements CommandLineRunner {
     private static final UUID TENANT_ANGELY =
             UUID.fromString("00000000-0000-0000-0000-000000000002");
     private static final String PASSWORD = "Test123!";
+    // El super admin tambien puede entrar con contrasena (no solo con Google) para pruebas.
+    private static final String PASSWORD_SUPER_ADMIN = "Admin123@";
 
     private static final Map<String, BigDecimal> CATALOGO =
             Map.of(
@@ -85,7 +87,13 @@ public class DatosPruebaInitializer implements CommandLineRunner {
         Rol rolAdmin = rolRepo.findByNombre("SASTRE_ADMIN").orElseThrow();
         Rol rolSastre = rolRepo.findByNombre("SASTRE").orElseThrow();
 
-        Cuenta superAdmin = nuevaCuenta("pablys8@gmail.com", null, "Pablo", "SuperAdmin", null);
+        Cuenta superAdmin =
+                nuevaCuenta(
+                        "pablys8@gmail.com",
+                        passwordEncoder.encode(PASSWORD_SUPER_ADMIN),
+                        "Pablo",
+                        "SuperAdmin",
+                        null);
         superAdmin.setSuperAdmin(true);
         cuentaRepo.save(superAdmin);
 
