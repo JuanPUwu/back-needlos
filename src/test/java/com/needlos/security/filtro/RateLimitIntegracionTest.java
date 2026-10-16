@@ -29,6 +29,29 @@ class RateLimitIntegracionTest extends IntegracionTest {
         intentarLogin("10.0.0.2").andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void aceptarInvitacion_tambienTieneLimitePorIp() throws Exception {
+        for (int i = 0; i < 3; i++) {
+            intentarAceptar("10.0.0.3").andExpect(status().isBadRequest());
+        }
+
+        intentarAceptar("10.0.0.3")
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("DEMASIADAS_SOLICITUDES"));
+    }
+
+    private ResultActions intentarAceptar(String ip) throws Exception {
+        return mvc.perform(
+                post("/api/v1/invitaciones/token-inventado/aceptar")
+                        .with(
+                                request -> {
+                                    request.setRemoteAddr(ip);
+                                    return request;
+                                })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"));
+    }
+
     private ResultActions intentarLogin(String ip) throws Exception {
         return mvc.perform(
                 post("/api/v1/auth/login")

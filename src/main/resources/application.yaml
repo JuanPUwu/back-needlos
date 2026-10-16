@@ -114,6 +114,8 @@ needlos:
     url-frontend: ${APP_URL}            # base del enlace que llega por correo
     minutos-validez: 30                 # el enlace vence y solo sirve una vez
     solicitudes-por-hora: 3             # por correo, para no inundar la bandeja
+  empleados:
+    horas-invitacion: 48                # vigencia del enlace para aceptar la invitacion
   verificacion:
     minutos-validez: 15                 # el codigo de 6 digitos vence y solo sirve una vez
     intentos-maximos: 5                 # codigos errados antes de invalidarlo (hay que pedir otro)

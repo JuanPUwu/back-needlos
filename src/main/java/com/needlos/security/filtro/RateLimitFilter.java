@@ -21,6 +21,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final Duration MINUTO = Duration.ofMinutes(1);
     private static final String BASE = "/api/v1/auth/";
+    private static final String BASE_INVITACIONES = "/api/v1/invitaciones/";
 
     private static final Set<String> RUTAS_AUTH =
             Set.of(
@@ -73,6 +74,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private String grupo(HttpServletRequest request) {
         String uri = request.getRequestURI();
+        // Aceptar una invitacion es publico (solo con el token): mismo limite que el login.
+        if (uri.startsWith(BASE_INVITACIONES) && uri.endsWith("/aceptar")) {
+            return "auth";
+        }
         if (!uri.startsWith(BASE)) {
             return null;
         }

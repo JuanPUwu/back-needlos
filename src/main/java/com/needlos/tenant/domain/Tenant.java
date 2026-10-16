@@ -43,6 +43,15 @@ public class Tenant {
     @Column(nullable = false)
     private boolean activo = true;
 
+    /**
+     * Datos opcionales del negocio para el ticket/factura (el SASTRE_ADMIN los llena si quiere).
+     */
+    @Column private String nit;
+
+    @Column private String direccion;
+
+    @Column private String telefono;
+
     @Column(name = "creado_en", updatable = false)
     private Instant creadoEn = Instant.now();
 }

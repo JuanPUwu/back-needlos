@@ -23,6 +23,10 @@ CREATE TABLE tenants (
     plan           VARCHAR(20)  NOT NULL DEFAULT 'DEMO',
     licencia_hasta TIMESTAMPTZ,
     activo         BOOLEAN      NOT NULL DEFAULT TRUE,
+    -- Datos opcionales del negocio para el ticket/factura (el SASTRE_ADMIN los llena si quiere).
+    nit            VARCHAR(30),
+    direccion      VARCHAR(200),
+    telefono       VARCHAR(20),
     creado_en      TIMESTAMPTZ  NOT NULL DEFAULT now(),
     CONSTRAINT ck_tenants_plan CHECK (plan IN ('DEMO', 'LICENCIADO'))
 );
@@ -122,6 +126,28 @@ CREATE TABLE verificaciones_correo (
     creado_en         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX ix_verificaciones_cuenta ON verificaciones_correo(cuenta_id);
+
+-- ── Invitaciones de empleados ───────────────────────────────────────
+--  El SASTRE_ADMIN invita por correo. No se crea la cuenta ni el acceso
+--  hasta que la persona ACEPTA la invitacion (enlace de un solo uso; solo
+--  se guarda el hash del token). Guarda los datos y el rol para crear el
+--  acceso en el momento de aceptar.
+CREATE TABLE invitaciones (
+    id                UUID         PRIMARY KEY,
+    tenant_id         UUID         NOT NULL REFERENCES tenants(id),
+    email             VARCHAR(120) NOT NULL,
+    nombre            VARCHAR(60)  NOT NULL,
+    apellido          VARCHAR(60)  NOT NULL,
+    telefono          VARCHAR(20),
+    numero_documento  VARCHAR(30),
+    rol               VARCHAR(40)  NOT NULL,
+    token_hash        VARCHAR(64)  NOT NULL UNIQUE,
+    expira            TIMESTAMPTZ  NOT NULL,
+    usado_en          TIMESTAMPTZ,
+    creado_en         TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+CREATE INDEX ix_invitaciones_tenant ON invitaciones(tenant_id);
+CREATE INDEX ix_invitaciones_email ON invitaciones(email);
 
 -- ── Consecutivos por sastreria (Reglas §10.4: nunca max + 1) ────────
 CREATE TABLE consecutivos (

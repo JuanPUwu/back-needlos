@@ -13,6 +13,7 @@ public enum CodigoError {
     ORDENAMIENTO_NO_PERMITIDO,
     ENLACE_RECUPERACION_INVALIDO,
     CODIGO_VERIFICACION_INVALIDO,
+    INVITACION_INVALIDA,
 
     // ── 401 · No autenticado ────────────────────────────────────────
     NO_AUTENTICADO,
@@ -31,6 +32,9 @@ public enum CodigoError {
     PRENDA_NO_ENCONTRADA,
     TIPO_PRENDA_NO_ENCONTRADO,
     SESION_NO_ENCONTRADA,
+    EMPLEADO_NO_ENCONTRADO,
+    INVITACION_NO_ENCONTRADA,
+    SASTRERIA_NO_ENCONTRADA,
 
     // ── 405 / 415 ───────────────────────────────────────────────────
     METODO_NO_PERMITIDO,
@@ -40,6 +44,7 @@ public enum CodigoError {
     CONFLICTO_CONCURRENCIA,
     CONFLICTO_DATOS,
     CORREO_EN_USO,
+    EMPLEADO_YA_EN_EQUIPO,
 
     // ── 422 · Regla de negocio incumplida ───────────────────────────
     PEDIDO_ANULADO,
@@ -49,6 +54,9 @@ public enum CodigoError {
     CONTRASENA_ACTUAL_INCORRECTA,
     CUENTA_SIN_VERIFICAR,
     CUENTA_YA_VERIFICADA,
+    ROL_INVALIDO,
+    ULTIMO_ADMIN,
+    INVITACION_NO_APLICA,
 
     // ── 429 / 500 ───────────────────────────────────────────────────
     DEMASIADAS_SOLICITUDES,

@@ -133,6 +133,9 @@ public class SecurityConfig {
                         auth ->
                                 auth.requestMatchers(HttpMethod.POST, AUTH_PUBLICOS)
                                         .permitAll()
+                                        // Aceptacion de invitaciones: solo con el token del enlace.
+                                        .requestMatchers("/api/v1/invitaciones/**")
+                                        .permitAll()
                                         .requestMatchers(HttpMethod.GET, "/actuator/health")
                                         .permitAll()
                                         .requestMatchers(SWAGGER)
