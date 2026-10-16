@@ -1,12 +1,12 @@
-package com.needlos.ordenes;
+package com.needlos.pedidos;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.needlos.clientes.ClienteService;
 import com.needlos.clientes.dto.ClienteDtos.CrearClienteRequest;
 import com.needlos.common.tenant.TenantContext;
-import com.needlos.ordenes.dto.OrdenDtos.CrearOrdenRequest;
-import com.needlos.ordenes.dto.OrdenDtos.PrendaRequest;
+import com.needlos.pedidos.dto.PedidoDtos.CrearPedidoRequest;
+import com.needlos.pedidos.dto.PedidoDtos.PrendaRequest;
 import com.needlos.soporte.IntegracionTest;
 import com.needlos.tipoprenda.TipoPrendaRepository;
 import com.needlos.tipoprenda.domain.TipoPrenda;
@@ -24,19 +24,22 @@ import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-/** Reglas §10.4: el consecutivo nunca se repite, ni con pedidos simultaneos. */
+/**
+ * Reglas §10.4: el consecutivo de la sastreria nunca se repite ni deja huecos, ni con pedidos
+ * simultaneos; el numero global tampoco se repite.
+ */
 class ConsecutivoConcurrenteTest extends IntegracionTest {
 
     private static final int PEDIDOS = 20;
 
-    @Autowired private OrdenService ordenService;
+    @Autowired private PedidoService pedidoService;
     @Autowired private ClienteService clienteService;
     @Autowired private TipoPrendaRepository tipoPrendaRepo;
 
     @Test
     void pedidosSimultaneos_recibenNumerosUnicosYCorrelativosPorSastreria() throws Exception {
         UUID tenant = datos.crearSastreria();
-        CrearOrdenRequest pedido = prepararPedido(tenant);
+        CrearPedidoRequest pedido = prepararPedido(tenant);
 
         List<Long> numeros = crearEnParalelo(tenant, pedido);
 
@@ -47,13 +50,15 @@ class ConsecutivoConcurrenteTest extends IntegracionTest {
         UUID otraSastreria = datos.crearSastreria();
         // El pedido se prepara ANTES de entrar al conTenant de abajo: conTenant limpia el
         // contexto del hilo en su "finally", y aqui anidarlo borraria el contexto del externo.
-        CrearOrdenRequest pedidoOtra = prepararPedido(otraSastreria);
+        CrearPedidoRequest pedidoOtra = prepararPedido(otraSastreria);
         long primeroDeOtra =
-                conTenant(otraSastreria, () -> ordenService.crear(pedidoOtra).numero());
+                conTenant(
+                        otraSastreria,
+                        () -> pedidoService.crear(pedidoOtra, UUID.randomUUID()).numeroLocal());
         assertThat(primeroDeOtra).isEqualTo(1);
     }
 
-    private List<Long> crearEnParalelo(UUID tenant, CrearOrdenRequest pedido) throws Exception {
+    private List<Long> crearEnParalelo(UUID tenant, CrearPedidoRequest pedido) throws Exception {
         ExecutorService pool = Executors.newFixedThreadPool(PEDIDOS);
         CountDownLatch salida = new CountDownLatch(1);
         try {
@@ -64,7 +69,11 @@ class ConsecutivoConcurrenteTest extends IntegracionTest {
                                 () -> {
                                     salida.await();
                                     return conTenant(
-                                            tenant, () -> ordenService.crear(pedido).numero());
+                                            tenant,
+                                            () ->
+                                                    pedidoService
+                                                            .crear(pedido, UUID.randomUUID())
+                                                            .numeroLocal());
                                 }));
             }
             salida.countDown();
@@ -78,7 +87,7 @@ class ConsecutivoConcurrenteTest extends IntegracionTest {
         }
     }
 
-    private CrearOrdenRequest prepararPedido(UUID tenant) {
+    private CrearPedidoRequest prepararPedido(UUID tenant) {
         return conTenant(
                 tenant,
                 () -> {
@@ -89,17 +98,20 @@ class ConsecutivoConcurrenteTest extends IntegracionTest {
                     TipoPrenda tipo = new TipoPrenda();
                     tipo.setNombre("Camisa");
                     UUID tipoId = tipoPrendaRepo.save(tipo).getId();
-                    return new CrearOrdenRequest(
+                    return new CrearPedidoRequest(
                             clienteId,
+                            null,
                             LocalDate.now().plusDays(5),
                             BigDecimal.ZERO,
                             List.of(
                                     new PrendaRequest(
+                                            null,
                                             tipoId,
                                             null,
                                             1,
                                             "Ajuste de mangas",
-                                            new BigDecimal("15000"))));
+                                            new BigDecimal("15000"))),
+                            null);
                 });
     }
 

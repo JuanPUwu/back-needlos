@@ -60,6 +60,22 @@ public interface AccesoRepository extends JpaRepository<Acceso, UUID> {
             """)
     long contarAdminsActivos(@Param("tenantId") UUID tenantId);
 
+    /** Si el acceso activo de la cuenta en la sastreria tiene el permiso indicado. */
+    @Query(
+            """
+            select count(a) > 0 from Acceso a
+            join a.permisos p
+            where a.cuentaId = :cuentaId and a.tenantId = :tenantId and a.activo = true
+              and p = :permiso
+            """)
+    boolean tienePermiso(
+            @Param("cuentaId") UUID cuentaId,
+            @Param("tenantId") UUID tenantId,
+            @Param("permiso") Permiso permiso);
+
+    /** Accesos activos de una sastreria (para asignar sastre a una prenda). */
+    List<Acceso> findByTenantIdAndActivoTrue(UUID tenantId);
+
     /** Si la cuenta ya tiene un acceso (activo o no) en esa sastreria. */
     boolean existsByCuentaIdAndTenantId(UUID cuentaId, UUID tenantId);
 }

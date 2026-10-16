@@ -74,6 +74,18 @@ CREATE TABLE acceso_roles (
 );
 CREATE INDEX ix_acceso_roles_rol ON acceso_roles(rol_id);
 
+-- ── Permisos de cada acceso ─────────────────────────────────────────
+--  Acciones que el SASTRE_ADMIN otorga a cada miembro (el SASTRE_ADMIN los
+--  tiene todos siempre). Un SASTRE nuevo no tiene ninguno.
+CREATE TABLE acceso_permisos (
+    acceso_id UUID        NOT NULL REFERENCES accesos(id) ON DELETE CASCADE,
+    permiso   VARCHAR(40) NOT NULL,
+    PRIMARY KEY (acceso_id, permiso),
+    CONSTRAINT ck_acceso_permisos CHECK (permiso IN (
+        'GESTIONAR_CLIENTES', 'CREAR_PEDIDOS', 'CAMBIAR_ESTADO_PRENDAS',
+        'ENTREGAR_PRENDAS', 'ASIGNAR_SASTRE', 'REGISTRAR_ABONOS'))
+);
+
 -- ── Sesiones (una por dispositivo/navegador) ────────────────────────
 --  El refresh token se guarda HASHEADO (SHA-256); el valor en claro solo
 --  vive en la cookie HttpOnly del navegador. token_hash_anterior permite
@@ -196,35 +208,44 @@ CREATE TABLE tipos_prenda (
 CREATE UNIQUE INDEX uq_tipos_prenda_tenant_nombre
     ON tipos_prenda(tenant_id, lower(nombre)) WHERE eliminado = FALSE;
 
--- ── Pedidos (en el codigo aun "ordenes"; se renombra en la Fase 4) ──
-CREATE TABLE ordenes (
-    id              UUID          PRIMARY KEY,
-    tenant_id       UUID          NOT NULL REFERENCES tenants(id),
-    numero          BIGINT        NOT NULL,
-    cliente_id      UUID          NOT NULL REFERENCES clientes(id),
-    fecha           DATE          NOT NULL DEFAULT CURRENT_DATE,
-    fecha_entrega   DATE          NOT NULL,
-    descuento       NUMERIC(12,2) NOT NULL DEFAULT 0,
-    anulada         BOOLEAN       NOT NULL DEFAULT FALSE,
-    razon_anulacion VARCHAR(300),
-    eliminado       BOOLEAN       NOT NULL DEFAULT FALSE,
-    version         BIGINT        NOT NULL DEFAULT 0,
-    creado_en       TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    actualizado_en  TIMESTAMPTZ,
-    creado_por      UUID,
-    actualizado_por UUID,
-    CONSTRAINT uq_orden_numero_por_tenant UNIQUE (tenant_id, numero),
-    CONSTRAINT ck_ordenes_descuento CHECK (descuento >= 0),
-    CONSTRAINT ck_ordenes_anulacion CHECK (NOT anulada OR razon_anulacion IS NOT NULL)
+-- ── Pedidos ─────────────────────────────────────────────────────────
+--  Numero visible "#G-L": G = numero_global (unico entre TODAS las sastrerias,
+--  secuencia de PostgreSQL; puede tener huecos si una creacion falla) y
+--  L = numero (consecutivo de la sastreria, sin huecos: tabla consecutivos).
+CREATE SEQUENCE pedidos_numero_global_seq START 1;
+
+CREATE TABLE pedidos (
+    id                 UUID          PRIMARY KEY,
+    tenant_id          UUID          NOT NULL REFERENCES tenants(id),
+    numero_global      BIGINT        NOT NULL UNIQUE,
+    numero             BIGINT        NOT NULL,
+    cliente_id         UUID          NOT NULL REFERENCES clientes(id),
+    fecha              DATE          NOT NULL,
+    fecha_entrega      DATE          NOT NULL,
+    descuento          NUMERIC(12,2) NOT NULL DEFAULT 0,
+    anulado            BOOLEAN       NOT NULL DEFAULT FALSE,
+    razon_anulacion    VARCHAR(300),
+    -- Protege contra el doble envio (cabecera Idempotency-Key, Reglas §5.8).
+    clave_idempotencia UUID          NOT NULL,
+    eliminado          BOOLEAN       NOT NULL DEFAULT FALSE,
+    version            BIGINT        NOT NULL DEFAULT 0,
+    creado_en          TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    actualizado_en     TIMESTAMPTZ,
+    creado_por         UUID,
+    actualizado_por    UUID,
+    CONSTRAINT uq_pedidos_numero_por_tenant UNIQUE (tenant_id, numero),
+    CONSTRAINT uq_pedidos_idempotencia UNIQUE (tenant_id, clave_idempotencia),
+    CONSTRAINT ck_pedidos_descuento CHECK (descuento >= 0),
+    CONSTRAINT ck_pedidos_anulacion CHECK (NOT anulado OR razon_anulacion IS NOT NULL)
 );
-CREATE INDEX ix_ordenes_tenant_cliente ON ordenes(tenant_id, cliente_id);
-CREATE INDEX ix_ordenes_tenant_entrega ON ordenes(tenant_id, fecha_entrega);
+CREATE INDEX ix_pedidos_tenant_cliente ON pedidos(tenant_id, cliente_id);
+CREATE INDEX ix_pedidos_tenant_entrega ON pedidos(tenant_id, fecha_entrega);
 
 -- ── Prendas (lineas del pedido) ─────────────────────────────────────
 CREATE TABLE prendas (
     id              UUID          PRIMARY KEY,
     tenant_id       UUID          NOT NULL REFERENCES tenants(id),
-    orden_id        UUID          NOT NULL REFERENCES ordenes(id),
+    pedido_id       UUID          NOT NULL REFERENCES pedidos(id),
     tipo_prenda_id  UUID          NOT NULL REFERENCES tipos_prenda(id),
     sastre_id       UUID          REFERENCES accesos(id),
     cantidad        INT           NOT NULL,
@@ -241,7 +262,7 @@ CREATE TABLE prendas (
     CONSTRAINT ck_prendas_precio   CHECK (precio_unitario >= 0),
     CONSTRAINT ck_prendas_estado   CHECK (estado IN ('EN_PROCESO', 'FINALIZADO', 'ENTREGADO'))
 );
-CREATE INDEX ix_prendas_orden       ON prendas(orden_id);
+CREATE INDEX ix_prendas_pedido      ON prendas(pedido_id);
 CREATE INDEX ix_prendas_tenant_tipo ON prendas(tenant_id, tipo_prenda_id);
 CREATE INDEX ix_prendas_sastre      ON prendas(sastre_id);
 
@@ -256,6 +277,36 @@ CREATE TABLE estado_prenda_historial (
     CONSTRAINT ck_estado_hist_estado CHECK (estado IN ('EN_PROCESO', 'FINALIZADO', 'ENTREGADO'))
 );
 CREATE INDEX ix_estado_hist_prenda ON estado_prenda_historial(prenda_id);
+
+-- ── Abonos (pagos de un pedido) ─────────────────────────────────────
+--  Nunca se borran: un abono se ANULA (solo SASTRE_ADMIN, con motivo y razon).
+--  Motivo DEVOLUCION = el dinero se le regreso al cliente (cuenta para caja, F6);
+--  ERROR_REGISTRO = el abono se registro por error (el dinero nunca entro).
+CREATE TABLE abonos (
+    id                 UUID          PRIMARY KEY,
+    tenant_id          UUID          NOT NULL REFERENCES tenants(id),
+    pedido_id          UUID          NOT NULL REFERENCES pedidos(id),
+    monto              NUMERIC(12,2) NOT NULL,
+    metodo             VARCHAR(20)   NOT NULL,
+    anulado            BOOLEAN       NOT NULL DEFAULT FALSE,
+    motivo_anulacion   VARCHAR(20),
+    razon_anulacion    VARCHAR(300),
+    anulado_en         TIMESTAMPTZ,
+    anulado_por        UUID,
+    clave_idempotencia UUID          NOT NULL,
+    version            BIGINT        NOT NULL DEFAULT 0,
+    creado_en          TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    actualizado_en     TIMESTAMPTZ,
+    creado_por         UUID,
+    actualizado_por    UUID,
+    CONSTRAINT uq_abonos_idempotencia UNIQUE (tenant_id, clave_idempotencia),
+    CONSTRAINT ck_abonos_monto   CHECK (monto > 0),
+    CONSTRAINT ck_abonos_metodo  CHECK (metodo IN ('EFECTIVO', 'TARJETA', 'NEQUI', 'DAVIPLATA', 'BRE_B', 'OTRO')),
+    CONSTRAINT ck_abonos_motivo  CHECK (motivo_anulacion IS NULL OR motivo_anulacion IN ('DEVOLUCION', 'ERROR_REGISTRO')),
+    CONSTRAINT ck_abonos_anulado CHECK (NOT anulado OR (motivo_anulacion IS NOT NULL AND razon_anulacion IS NOT NULL))
+);
+CREATE INDEX ix_abonos_pedido ON abonos(pedido_id);
+CREATE INDEX ix_abonos_tenant_creado ON abonos(tenant_id, creado_en);
 
 -- ═══════════════════════════════════════════════════════════════════
 --  Datos de referencia (necesarios en todos los ambientes)

@@ -2,6 +2,7 @@ package com.needlos.soporte;
 
 import com.needlos.security.acceso.Acceso;
 import com.needlos.security.acceso.AccesoRepository;
+import com.needlos.security.acceso.Permiso;
 import com.needlos.security.cuenta.Cuenta;
 import com.needlos.security.cuenta.CuentaRepository;
 import com.needlos.security.rol.RolRepository;
@@ -12,6 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.springframework.boot.test.context.TestComponent;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Crea datos aislados para cada prueba (correos y sastrerias unicos), de modo que las pruebas no
@@ -81,6 +83,14 @@ public class DatosPrueba {
         acceso.setTenantId(tenantId);
         acceso.setRoles(Set.of(rolRepo.findByNombre(rol).orElseThrow()));
         return accesoRepo.save(acceso);
+    }
+
+    /** Otorga permisos a un acceso (como lo haria el SASTRE_ADMIN desde Equipo). */
+    @Transactional
+    public void darPermisos(Acceso acceso, Permiso... permisos) {
+        Acceso actual = accesoRepo.findById(acceso.getId()).orElseThrow();
+        actual.getPermisos().addAll(Set.of(permisos));
+        accesoRepo.save(actual);
     }
 
     public void desactivarAcceso(Acceso acceso) {

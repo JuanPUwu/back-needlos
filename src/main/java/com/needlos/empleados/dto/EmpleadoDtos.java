@@ -1,10 +1,12 @@
 package com.needlos.empleados.dto;
 
+import com.needlos.security.acceso.Permiso;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /** DTOs de la gestion de empleados (accesos de una sastreria). */
@@ -23,14 +25,22 @@ public final class EmpleadoDtos {
             @Size(max = 30) String numeroDocumento,
             @NotBlank @Pattern(regexp = ROLES, message = "Rol no válido") String rol) {}
 
+    /**
+     * @param permisos permisos otorgados (solo aplican al rol SASTRE; un SASTRE_ADMIN los tiene
+     *     todos). Null = sin permisos.
+     */
     public record ActualizarEmpleadoRequest(
             @NotBlank @Size(max = 60) String nombre,
             @NotBlank @Size(max = 60) String apellido,
             @Size(max = 20) String telefono,
             @Size(max = 30) String numeroDocumento,
-            @NotBlank @Pattern(regexp = ROLES, message = "Rol no válido") String rol) {}
+            @NotBlank @Pattern(regexp = ROLES, message = "Rol no válido") String rol,
+            Set<Permiso> permisos) {}
 
-    /** Un miembro del equipo (ya acepto su invitacion). */
+    /**
+     * Un miembro del equipo (ya acepto su invitacion). {@code permisos}: los otorgados (vacio para
+     * un SASTRE_ADMIN, que los tiene todos).
+     */
     public record EmpleadoResponse(
             UUID accesoId,
             UUID cuentaId,
@@ -40,5 +50,9 @@ public final class EmpleadoDtos {
             String telefono,
             String numeroDocumento,
             List<String> roles,
+            List<String> permisos,
             boolean activo) {}
+
+    /** Miembro activo al que se le puede asignar una prenda. */
+    public record MiembroAsignableResponse(UUID accesoId, String nombre) {}
 }

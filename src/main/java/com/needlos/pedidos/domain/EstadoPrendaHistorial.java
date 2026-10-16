@@ -1,4 +1,4 @@
-package com.needlos.ordenes.domain;
+package com.needlos.pedidos.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,8 +16,8 @@ import lombok.Setter;
 import org.hibernate.annotations.TenantId;
 
 /**
- * Registro inmutable de cada cambio de estado de una prenda. Da trazabilidad: quien cambio el
- * estado, cuando y a que. Alimenta informes de productividad y tiempos de entrega.
+ * Registro inmutable de cada cambio de estado de una prenda: quien, cuando y a que estado. Alimenta
+ * informes de productividad y tiempos de entrega.
  */
 @Getter
 @Setter
@@ -46,6 +46,7 @@ public class EstadoPrendaHistorial {
     @Column(name = "fecha_cambio", nullable = false)
     private Instant fechaCambio = Instant.now();
 
+    /** Cuenta que hizo el cambio. */
     @Column(name = "usuario_id")
     private UUID usuarioId;
 

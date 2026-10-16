@@ -7,10 +7,16 @@ import com.needlos.clientes.dto.ClienteDtos.CrearClienteRequest;
 import com.needlos.common.exception.CodigoError;
 import com.needlos.common.exception.ConflictoException;
 import com.needlos.common.exception.RecursoNoEncontradoException;
+import com.needlos.common.exception.ReglaNegocioException;
 import com.needlos.common.exception.SolicitudInvalidaException;
 import com.needlos.common.web.IfMatch;
 import com.needlos.common.web.Ordenamiento;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -44,7 +50,7 @@ public class ClienteService {
         c.setNombre(req.nombre().trim());
         c.setApellido(req.apellido().trim());
         c.setTelefono(telefono);
-        return toResponse(repo.save(c));
+        return toResponse(repo.save(c), BigDecimal.ZERO);
     }
 
     @Transactional(readOnly = true)
@@ -56,8 +62,10 @@ public class ClienteService {
                     CodigoError.SOLICITUD_INVALIDA,
                     "La fecha inicial no puede ser posterior a la final.");
         }
-        return repo.findAll(ClienteFiltros.de(buscar, desde, hasta), pageable)
-                .map(this::toResponse);
+        Page<Cliente> pagina = repo.findAll(ClienteFiltros.de(buscar, desde, hasta), pageable);
+        Map<UUID, BigDecimal> saldos =
+                saldos(pagina.getContent().stream().map(Cliente::getId).toList());
+        return pagina.map(c -> toResponse(c, saldos.getOrDefault(c.getId(), BigDecimal.ZERO)));
     }
 
     @Transactional(readOnly = true)
@@ -92,9 +100,15 @@ public class ClienteService {
     }
 
     public void eliminar(UUID id) {
+        Cliente c = buscar(id);
+        if (repo.tienePedidosActivos(id)) {
+            throw new ReglaNegocioException(
+                    CodigoError.CLIENTE_CON_PEDIDOS_ACTIVOS,
+                    "No se puede eliminar: el cliente tiene pedidos sin entregar o con saldo"
+                            + " pendiente.");
+        }
         // Soft-delete: @SoftDelete convierte este delete en un UPDATE eliminado=true.
-        // Regla (2026-10-15): solo si no tiene pedidos activos -> se valida en F4 (Pedidos).
-        repo.delete(buscar(id));
+        repo.delete(c);
     }
 
     private Cliente buscar(UUID id) {
@@ -112,13 +126,30 @@ public class ClienteService {
                 "El teléfono " + telefono + " ya pertenece a otro cliente.");
     }
 
+    /** Saldo pendiente por cliente (los que no deben no aparecen). */
+    private Map<UUID, BigDecimal> saldos(Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        Map<UUID, BigDecimal> saldos = new HashMap<>();
+        for (Object[] fila : repo.saldosPendientes(ids)) {
+            saldos.put((UUID) fila[0], (BigDecimal) fila[1]);
+        }
+        return saldos;
+    }
+
     private ClienteResponse toResponse(Cliente c) {
+        return toResponse(c, saldos(List.of(c.getId())).getOrDefault(c.getId(), BigDecimal.ZERO));
+    }
+
+    private static ClienteResponse toResponse(Cliente c, BigDecimal saldo) {
         return new ClienteResponse(
                 c.getId(),
                 c.getNombre(),
                 c.getApellido(),
                 c.getTelefono(),
                 c.getFechaRegistro(),
+                saldo,
                 c.getVersion());
     }
 }

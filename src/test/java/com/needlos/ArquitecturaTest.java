@@ -54,7 +54,8 @@ class ArquitecturaTest {
                             "com.needlos.security..",
                             "com.needlos.tenant..",
                             "com.needlos.clientes..",
-                            "com.needlos.ordenes..",
+                            "com.needlos.pedidos..",
+                            "com.needlos.empleados..",
                             "com.needlos.tipoprenda..",
                             "com.needlos.dev..")
                     .because("common es transversal y no conoce las funcionalidades (Reglas §2.1)");

@@ -170,6 +170,11 @@ public class EmpleadoService {
         cuenta.setNumeroDocumento(normalizar(req.numeroDocumento()));
 
         acceso.setRoles(new HashSet<>(Set.of(nuevoRol)));
+        // Un SASTRE_ADMIN tiene todos los permisos: no se guardan sueltos.
+        acceso.getPermisos().clear();
+        if (!ROL_ADMIN.equals(req.rol()) && req.permisos() != null) {
+            acceso.getPermisos().addAll(req.permisos());
+        }
         return toResponse(acceso, cuenta);
     }
 
@@ -262,6 +267,7 @@ public class EmpleadoService {
                 cuenta.getTelefono(),
                 cuenta.getNumeroDocumento(),
                 roles,
+                acceso.getPermisos().stream().map(Enum::name).sorted().toList(),
                 acceso.isActivo());
     }
 

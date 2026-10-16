@@ -3,6 +3,7 @@ package com.needlos.clientes.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -24,8 +25,8 @@ public final class ClienteDtos {
             @NotBlank @Pattern(regexp = TELEFONO, message = MSG_TELEFONO) String telefono) {}
 
     /**
-     * Cliente. {@code version} se devuelve en {@code If-Match} al editar (bloqueo optimista entre
-     * peticiones).
+     * Cliente. {@code saldoPendiente}: lo que debe sumando sus pedidos no anulados. {@code version}
+     * se devuelve en {@code If-Match} al editar (bloqueo optimista entre peticiones).
      */
     public record ClienteResponse(
             UUID id,
@@ -33,5 +34,6 @@ public final class ClienteDtos {
             String apellido,
             String telefono,
             LocalDate fechaRegistro,
+            BigDecimal saldoPendiente,
             long version) {}
 }

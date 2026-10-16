@@ -27,7 +27,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Clientes. Ver/crear/editar: SASTRE y SASTRE_ADMIN. Eliminar: solo SASTRE_ADMIN. */
+/**
+ * Clientes. Ver: todo el equipo. Crear y editar: permiso GESTIONAR_CLIENTES (el SASTRE_ADMIN lo
+ * tiene siempre). Eliminar: solo SASTRE_ADMIN.
+ */
 @Tag(name = "Clientes")
 @SecurityRequirement(name = "Bearer")
 @RestController
@@ -43,6 +46,7 @@ public class ClienteController {
 
     @Operation(summary = "Crea un cliente")
     @PostMapping
+    @PreAuthorize("@permisos.tiene('GESTIONAR_CLIENTES')")
     public ResponseEntity<ClienteResponse> crear(@Valid @RequestBody CrearClienteRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.crear(req));
     }
@@ -84,6 +88,7 @@ public class ClienteController {
                     "Exige la cabecera If-Match con la versión leída; si otra persona lo modificó"
                             + " antes, responde 409 CONFLICTO_CONCURRENCIA.")
     @PutMapping("/{id}")
+    @PreAuthorize("@permisos.tiene('GESTIONAR_CLIENTES')")
     public ClienteResponse actualizar(
             @PathVariable UUID id,
             @RequestHeader(value = IfMatch.CABECERA, required = false) String ifMatch,
@@ -91,7 +96,9 @@ public class ClienteController {
         return service.actualizar(id, IfMatch.version(ifMatch), req);
     }
 
-    @Operation(summary = "Elimina un cliente (borrado lógico). Solo SASTRE_ADMIN.")
+    @Operation(
+            summary = "Elimina un cliente (borrado lógico). Solo SASTRE_ADMIN.",
+            description = "No se puede si tiene pedidos activos (sin entregar o con saldo).")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('SASTRE_ADMIN')")
     public ResponseEntity<Void> eliminar(@PathVariable UUID id) {

@@ -3,6 +3,7 @@ package com.needlos.empleados;
 import com.needlos.empleados.dto.EmpleadoDtos.ActualizarEmpleadoRequest;
 import com.needlos.empleados.dto.EmpleadoDtos.CrearEmpleadoRequest;
 import com.needlos.empleados.dto.EmpleadoDtos.EmpleadoResponse;
+import com.needlos.empleados.dto.EmpleadoDtos.MiembroAsignableResponse;
 import com.needlos.empleados.dto.InvitacionDtos.InvitacionResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -32,9 +33,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class EmpleadoController {
 
     private final EmpleadoService service;
+    private final DirectorioEquipo directorio;
 
-    public EmpleadoController(EmpleadoService service) {
+    public EmpleadoController(EmpleadoService service, DirectorioEquipo directorio) {
         this.service = service;
+        this.directorio = directorio;
+    }
+
+    @Operation(
+            summary = "Miembros activos a los que se les puede asignar una prenda",
+            description = "Disponible para todo el equipo (solo id y nombre).")
+    @GetMapping("/asignables")
+    @PreAuthorize("hasAnyRole('SASTRE', 'SASTRE_ADMIN')")
+    public List<MiembroAsignableResponse> asignables() {
+        return directorio.asignables();
     }
 
     @Operation(summary = "Lista los miembros del equipo (ya aceptados)")

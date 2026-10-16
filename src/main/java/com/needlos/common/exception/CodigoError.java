@@ -15,6 +15,7 @@ public enum CodigoError {
     CODIGO_VERIFICACION_INVALIDO,
     INVITACION_INVALIDA,
     VERSION_REQUERIDA,
+    IDEMPOTENCIA_REQUERIDA,
 
     // ── 401 · No autenticado ────────────────────────────────────────
     NO_AUTENTICADO,
@@ -36,6 +37,7 @@ public enum CodigoError {
     EMPLEADO_NO_ENCONTRADO,
     INVITACION_NO_ENCONTRADA,
     SASTRERIA_NO_ENCONTRADA,
+    ABONO_NO_ENCONTRADO,
 
     // ── 405 / 415 ───────────────────────────────────────────────────
     METODO_NO_PERMITIDO,
@@ -60,6 +62,17 @@ public enum CodigoError {
     ROL_INVALIDO,
     ULTIMO_ADMIN,
     INVITACION_NO_APLICA,
+    CLIENTE_CON_PEDIDOS_ACTIVOS,
+    CLIENTE_REQUERIDO,
+    TIPO_PRENDA_INACTIVO,
+    SASTRE_INVALIDO,
+    FECHA_ENTREGA_INVALIDA,
+    DESCUENTO_INVALIDO,
+    TRANSICION_INVALIDA,
+    PEDIDO_CON_ABONOS,
+    TOTAL_MENOR_QUE_ABONADO,
+    ABONO_SUPERA_SALDO,
+    ABONO_YA_ANULADO,
 
     // ── 429 / 500 ───────────────────────────────────────────────────
     DEMASIADAS_SOLICITUDES,

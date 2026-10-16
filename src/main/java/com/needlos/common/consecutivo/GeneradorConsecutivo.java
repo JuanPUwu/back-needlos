@@ -41,4 +41,18 @@ public class GeneradorConsecutivo {
         }
         return numero;
     }
+
+    /**
+     * Siguiente numero de la serie GLOBAL (compartida por todas las sastrerias). Una secuencia no
+     * se revierte con la transaccion: si la creacion falla, ese numero se pierde (hueco aceptado
+     * por el dueno, 2026-10-15). A cambio no hay bloqueo entre sastrerias.
+     */
+    public long siguienteGlobal(TipoConsecutivo tipo) {
+        Long numero =
+                jdbc.queryForObject("SELECT nextval('" + tipo.secuenciaGlobal() + "')", Long.class);
+        if (numero == null) {
+            throw new IllegalStateException("La secuencia global no devolvio valor.");
+        }
+        return numero;
+    }
 }

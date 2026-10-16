@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import com.needlos.security.acceso.Permiso;
 import com.needlos.security.cuenta.Cuenta;
 import com.needlos.soporte.IntegracionTest;
 import java.time.LocalDate;
@@ -213,11 +214,34 @@ class ClienteIntegracionTest extends IntegracionTest {
     }
 
     @Test
-    void unSastreCreaYEditaPeroNoElimina() throws Exception {
+    void unSastreSinPermiso_veClientesPeroNoCreaNiEdita() throws Exception {
         UUID tenant = datos.crearSastreria();
         Cuenta dueno = datos.crearDueno(tenant);
         Cuenta sastre = datos.crearCuenta();
         datos.darAcceso(sastre, tenant, "SASTRE");
+        String tokenSastre = iniciarSesion(sastre.getEmail()).accessToken();
+        String id =
+                JsonPath.read(
+                        crear(iniciarSesion(dueno.getEmail()).accessToken(), CLIENTE)
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString(),
+                        "$.id");
+
+        mvc.perform(get("/api/v1/clientes").header("Authorization", bearer(tokenSastre)))
+                .andExpect(jsonPath("$.contenido", hasSize(1)));
+        crear(tokenSastre, CLIENTE.replace("3001234567", "3110000000"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("SIN_PERMISO"));
+        editar(tokenSastre, id, "0", CLIENTE).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void unSastreConPermiso_creaYEditaPeroNoElimina() throws Exception {
+        UUID tenant = datos.crearSastreria();
+        Cuenta dueno = datos.crearDueno(tenant);
+        Cuenta sastre = datos.crearCuenta();
+        datos.darPermisos(datos.darAcceso(sastre, tenant, "SASTRE"), Permiso.GESTIONAR_CLIENTES);
         String tokenSastre = iniciarSesion(sastre.getEmail()).accessToken();
         String tokenAdmin = iniciarSesion(dueno.getEmail()).accessToken();
 

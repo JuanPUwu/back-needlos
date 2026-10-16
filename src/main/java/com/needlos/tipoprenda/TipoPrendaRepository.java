@@ -28,9 +28,9 @@ public interface TipoPrendaRepository extends JpaRepository<TipoPrenda, UUID> {
             value =
                     """
                     select p.precio_unitario from prendas p
-                    join ordenes o on o.id = p.orden_id
+                    join pedidos o on o.id = p.pedido_id
                     where p.tenant_id = :tenantId and p.tipo_prenda_id = :tipoId
-                      and p.eliminado = false and o.eliminado = false and o.anulada = false
+                      and p.eliminado = false and o.eliminado = false and o.anulado = false
                     order by p.creado_en desc
                     limit 1
                     """,

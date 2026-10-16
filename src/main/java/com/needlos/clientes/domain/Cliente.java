@@ -1,6 +1,7 @@
 package com.needlos.clientes.domain;
 
 import com.needlos.common.domain.BaseEntity;
+import com.needlos.common.tiempo.Fechas;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -25,5 +26,5 @@ public class Cliente extends BaseEntity {
     @Column private String telefono;
 
     @Column(name = "fecha_registro", nullable = false)
-    private LocalDate fechaRegistro = LocalDate.now();
+    private LocalDate fechaRegistro = Fechas.hoy();
 }

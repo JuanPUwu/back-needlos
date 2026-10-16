@@ -1,4 +1,4 @@
-package com.needlos.ordenes.domain;
+package com.needlos.pedidos.domain;
 
 import com.needlos.common.domain.BaseEntity;
 import com.needlos.common.exception.CodigoError;
@@ -11,6 +11,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.SoftDelete;
 
+/** Linea de un pedido: una prenda (tipo, cantidad, precio) con su propio estado. */
 @Getter
 @Setter
 @Entity
@@ -28,15 +30,15 @@ import org.hibernate.annotations.SoftDelete;
 public class Prenda extends BaseEntity {
 
     // EAGER a proposito: Hibernate no permite LAZY en un to-one cuyo destino
-    // tiene @SoftDelete (Orden). El acceso inverso es puntual (no en listados).
+    // tiene @SoftDelete (Pedido). El acceso inverso es puntual (no en listados).
     @ManyToOne
-    @JoinColumn(name = "orden_id", nullable = false)
-    private Orden orden;
+    @JoinColumn(name = "pedido_id", nullable = false)
+    private Pedido pedido;
 
     @Column(name = "tipo_prenda_id", nullable = false)
     private UUID tipoPrendaId;
 
-    /** Sastre asignado; puede quedar sin asignar y cambiarse despues. */
+    /** Acceso del sastre asignado; puede quedar sin asignar y cambiarse despues. */
     @Column(name = "sastre_id")
     private UUID sastreId;
 
@@ -54,6 +56,7 @@ public class Prenda extends BaseEntity {
     private EstadoPrenda estado = EstadoPrenda.EN_PROCESO;
 
     @OneToMany(mappedBy = "prenda", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("fechaCambio ASC")
     private List<EstadoPrendaHistorial> historial = new ArrayList<>();
 
     /** Subtotal de la linea (precio unitario x cantidad). */
@@ -61,26 +64,34 @@ public class Prenda extends BaseEntity {
         return precioUnitario.multiply(BigDecimal.valueOf(cantidad));
     }
 
-    /**
-     * Cambia el estado de la prenda. Una prenda ya ENTREGADA no puede cambiar. Registra el cambio
-     * en el historial.
-     */
-    public void cambiarEstado(EstadoPrenda nuevo, UUID usuarioId) {
-        if (estado == EstadoPrenda.ENTREGADO) {
+    public boolean entregada() {
+        return estado == EstadoPrenda.ENTREGADO;
+    }
+
+    /** Cambia el estado segun las transiciones permitidas y lo deja en el historial. */
+    public void cambiarEstado(EstadoPrenda nuevo, UUID cuentaId) {
+        if (entregada()) {
             throw new ReglaNegocioException(
                     CodigoError.PRENDA_ENTREGADA,
                     "La prenda ya fue entregada y no puede cambiar de estado.");
         }
+        if (!estado.puedePasarA(nuevo)) {
+            throw new ReglaNegocioException(
+                    CodigoError.TRANSICION_INVALIDA,
+                    nuevo == EstadoPrenda.ENTREGADO
+                            ? "Solo se puede entregar una prenda finalizada."
+                            : "La prenda ya está en ese estado.");
+        }
         this.estado = nuevo;
-        registrarEnHistorial(nuevo, usuarioId);
+        registrarEnHistorial(nuevo, cuentaId);
     }
 
-    /** Registra un estado en el historial (uso interno / estado inicial). */
-    public void registrarEnHistorial(EstadoPrenda estado, UUID usuarioId) {
+    /** Registra un estado en el historial (estado inicial o cambio). */
+    public void registrarEnHistorial(EstadoPrenda estado, UUID cuentaId) {
         EstadoPrendaHistorial h = new EstadoPrendaHistorial();
         h.setPrenda(this);
         h.setEstado(estado);
-        h.setUsuarioId(usuarioId);
+        h.setUsuarioId(cuentaId);
         historial.add(h);
     }
 }

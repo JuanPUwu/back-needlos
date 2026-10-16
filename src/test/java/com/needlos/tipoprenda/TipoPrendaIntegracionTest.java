@@ -195,7 +195,7 @@ class TipoPrendaIntegracionTest extends IntegracionTest {
 
         // Un pedido anulado no cuenta: vuelve al ultimo precio vigente.
         mvc.perform(
-                        patch("/api/v1/ordenes/{id}/anular", ultimo)
+                        patch("/api/v1/pedidos/{id}/anular", ultimo)
                                 .header("Authorization", bearer(token))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"razon\": \"Precio equivocado\"}"))
@@ -264,8 +264,9 @@ class TipoPrendaIntegracionTest extends IntegracionTest {
             throws Exception {
         String cuerpo =
                 mvc.perform(
-                                post("/api/v1/ordenes")
+                                post("/api/v1/pedidos")
                                         .header("Authorization", bearer(token))
+                                        .header("Idempotency-Key", UUID.randomUUID().toString())
                                         .contentType(MediaType.APPLICATION_JSON)
                                         .content(
                                                 """

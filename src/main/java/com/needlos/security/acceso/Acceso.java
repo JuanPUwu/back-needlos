@@ -1,8 +1,12 @@
 package com.needlos.security.acceso;
 
 import com.needlos.security.rol.Rol;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -49,4 +53,11 @@ public class Acceso {
             joinColumns = @JoinColumn(name = "acceso_id"),
             inverseJoinColumns = @JoinColumn(name = "rol_id"))
     private Set<Rol> roles = new HashSet<>();
+
+    /** Permisos otorgados por el SASTRE_ADMIN (no aplica a un SASTRE_ADMIN: los tiene todos). */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "acceso_permisos", joinColumns = @JoinColumn(name = "acceso_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "permiso", nullable = false)
+    private Set<Permiso> permisos = new HashSet<>();
 }
