@@ -83,7 +83,9 @@ class ConsecutivoConcurrenteTest extends IntegracionTest {
                 tenant,
                 () -> {
                     UUID clienteId =
-                            clienteService.crear(new CrearClienteRequest("Ana", "Ruiz", null)).id();
+                            clienteService
+                                    .crear(new CrearClienteRequest("Ana", "Ruiz", "3001234567"))
+                                    .id();
                     TipoPrenda tipo = new TipoPrenda();
                     tipo.setNombre("Camisa");
                     UUID tipoId = tipoPrendaRepo.save(tipo).getId();

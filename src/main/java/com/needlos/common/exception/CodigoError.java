@@ -14,6 +14,7 @@ public enum CodigoError {
     ENLACE_RECUPERACION_INVALIDO,
     CODIGO_VERIFICACION_INVALIDO,
     INVITACION_INVALIDA,
+    VERSION_REQUERIDA,
 
     // ── 401 · No autenticado ────────────────────────────────────────
     NO_AUTENTICADO,
@@ -45,6 +46,8 @@ public enum CodigoError {
     CONFLICTO_DATOS,
     CORREO_EN_USO,
     EMPLEADO_YA_EN_EQUIPO,
+    TIPO_PRENDA_DUPLICADO,
+    TELEFONO_EN_USO,
 
     // ── 422 · Regla de negocio incumplida ───────────────────────────
     PEDIDO_ANULADO,

@@ -36,6 +36,7 @@ import com.needlos.security.sesion.SesionService.SesionRenovada;
 import com.needlos.security.verificacion.VerificacionCorreoService;
 import com.needlos.security.verificacion.VerificacionCorreoSolicitada;
 import com.needlos.tenant.GeneradorSlug;
+import com.needlos.tenant.SastreriaRegistrada;
 import com.needlos.tenant.TenantRepository;
 import com.needlos.tenant.domain.PlanTenant;
 import com.needlos.tenant.domain.Tenant;
@@ -593,6 +594,8 @@ public class AuthService {
         tenant.setPlan(PlanTenant.DEMO);
         tenant.setActivo(true);
         tenantRepo.save(tenant);
+        // Otros modulos preparan sus datos iniciales (p. ej. el catalogo base de prendas).
+        eventos.publishEvent(new SastreriaRegistrada(tenant.getId()));
 
         cuentaRepo.save(cuenta);
 

@@ -48,7 +48,7 @@ public class DatosPruebaInitializer implements CommandLineRunner {
     private static final Map<String, BigDecimal> CATALOGO =
             Map.of(
                     "Camisa", new BigDecimal("18000"),
-                    "Pantalon", new BigDecimal("12000"),
+                    "Pantalón", new BigDecimal("12000"),
                     "Saco", new BigDecimal("15000"),
                     "Vestido", new BigDecimal("12000"),
                     "Chaqueta", new BigDecimal("15000"));

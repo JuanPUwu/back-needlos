@@ -10,22 +10,28 @@ public final class ClienteDtos {
 
     private ClienteDtos() {}
 
+    private static final String TELEFONO = "^[0-9]{7,15}$";
+    private static final String MSG_TELEFONO = "El teléfono debe tener entre 7 y 15 dígitos";
+
     public record CrearClienteRequest(
             @NotBlank @Size(min = 2, max = 60) String nombre,
             @NotBlank @Size(min = 2, max = 60) String apellido,
-            @Pattern(
-                            regexp = "^[0-9]{7,15}$",
-                            message = "El teléfono debe tener entre 7 y 15 dígitos")
-                    String telefono) {}
+            @NotBlank @Pattern(regexp = TELEFONO, message = MSG_TELEFONO) String telefono) {}
 
     public record ActualizarClienteRequest(
             @NotBlank @Size(min = 2, max = 60) String nombre,
             @NotBlank @Size(min = 2, max = 60) String apellido,
-            @Pattern(
-                            regexp = "^[0-9]{7,15}$",
-                            message = "El teléfono debe tener entre 7 y 15 dígitos")
-                    String telefono) {}
+            @NotBlank @Pattern(regexp = TELEFONO, message = MSG_TELEFONO) String telefono) {}
 
+    /**
+     * Cliente. {@code version} se devuelve en {@code If-Match} al editar (bloqueo optimista entre
+     * peticiones).
+     */
     public record ClienteResponse(
-            UUID id, String nombre, String apellido, String telefono, LocalDate fechaRegistro) {}
+            UUID id,
+            String nombre,
+            String apellido,
+            String telefono,
+            LocalDate fechaRegistro,
+            long version) {}
 }

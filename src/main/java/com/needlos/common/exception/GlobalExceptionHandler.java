@@ -88,7 +88,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return responder(
                 HttpStatus.CONFLICT,
                 CodigoError.CONFLICTO_CONCURRENCIA,
-                "Otra persona modifico este registro al mismo tiempo. Recarga e intentalo de nuevo.",
+                "Otra persona modificó este registro al mismo tiempo. Recarga e inténtalo de nuevo.",
                 request);
     }
 

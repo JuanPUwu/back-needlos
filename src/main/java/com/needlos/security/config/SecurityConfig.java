@@ -170,7 +170,8 @@ public class SecurityConfig {
                         HttpHeaders.AUTHORIZATION,
                         HttpHeaders.CONTENT_TYPE,
                         CorrelationIdFilter.CABECERA,
-                        "Idempotency-Key"));
+                        "Idempotency-Key",
+                        HttpHeaders.IF_MATCH));
         config.setExposedHeaders(List.of(CorrelationIdFilter.CABECERA, HttpHeaders.RETRY_AFTER));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

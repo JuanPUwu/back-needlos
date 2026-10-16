@@ -164,7 +164,7 @@ CREATE TABLE clientes (
     tenant_id       UUID         NOT NULL REFERENCES tenants(id),
     nombre          VARCHAR(60)  NOT NULL,
     apellido        VARCHAR(60)  NOT NULL,
-    telefono        VARCHAR(20),
+    telefono        VARCHAR(20)  NOT NULL,
     fecha_registro  DATE         NOT NULL DEFAULT CURRENT_DATE,
     eliminado       BOOLEAN      NOT NULL DEFAULT FALSE,
     version         BIGINT       NOT NULL DEFAULT 0,
@@ -174,6 +174,8 @@ CREATE TABLE clientes (
     actualizado_por UUID
 );
 CREATE INDEX ix_clientes_tenant_apellido ON clientes(tenant_id, apellido, nombre);
+-- Telefono unico por sastreria entre clientes vigentes (al eliminar uno, su numero queda libre).
+CREATE UNIQUE INDEX uq_clientes_tenant_telefono ON clientes(tenant_id, telefono) WHERE eliminado = FALSE;
 
 -- ── Tipos de prenda ─────────────────────────────────────────────────
 CREATE TABLE tipos_prenda (
@@ -190,7 +192,9 @@ CREATE TABLE tipos_prenda (
     actualizado_por UUID,
     CONSTRAINT ck_tipos_prenda_precio CHECK (precio_base IS NULL OR precio_base >= 0)
 );
-CREATE INDEX ix_tipos_prenda_tenant_nombre ON tipos_prenda(tenant_id, nombre);
+-- Nombre unico por sastreria (sin distinguir mayusculas), ignorando los eliminados.
+CREATE UNIQUE INDEX uq_tipos_prenda_tenant_nombre
+    ON tipos_prenda(tenant_id, lower(nombre)) WHERE eliminado = FALSE;
 
 -- ── Pedidos (en el codigo aun "ordenes"; se renombra en la Fase 4) ──
 CREATE TABLE ordenes (
